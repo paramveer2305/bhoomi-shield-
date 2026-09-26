@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+backend/venv/
+backend/.venv/
+env/
+venv/
+
+# Build & Output
+dist/
+build/
+*.egg-info/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environment Variables
+.env
+.env.local
+
+# Logs
+*.log
+
+# IDE & Editor
+.vscode/
+.idea/
+.claude/
+.cursor/
+.agents/
+.devin/
+.DS_Store
