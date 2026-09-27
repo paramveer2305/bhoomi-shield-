@@ -21,6 +21,7 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
     | 'role-citizen'
     | 'role-patwari'
     | 'role-tehsildar'
+    | 'role-officer'
     | 'role-admin';
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
@@ -61,6 +62,7 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
       'role-citizen': 'badge-role-citizen',
       'role-patwari': 'badge-role-patwari',
       'role-tehsildar': 'badge-role-tehsildar',
+      'role-officer': 'badge-role-officer',
       'role-admin': 'badge-role-admin',
     };
 
@@ -151,6 +153,8 @@ export const getRoleBadgeVariant = (role: string): BadgeProps['variant'] => {
       return 'role-patwari';
     case 'tehsildar':
       return 'role-tehsildar';
+    case 'officer':
+      return 'role-officer';
     case 'admin':
       return 'role-admin';
     default:

@@ -6,7 +6,7 @@ class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     full_name: str
-    role: str = Field("citizen", description="Role: citizen, officer, admin")
+    role: str = Field("citizen", description="Role: citizen, patwari, tehsildar, officer, admin")
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6)

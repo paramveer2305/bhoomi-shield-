@@ -396,6 +396,10 @@
     @apply bg-role-tehsildar-bg text-role-tehsildar border border-destructive-200;
   }
 
+  .badge-role-officer {
+    @apply bg-role-patwari-bg text-role-patwari border border-success-200;
+  }
+
   .badge-role-admin {
     @apply bg-role-admin-bg text-role-admin border border-secondary-200;
   }

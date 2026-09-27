@@ -22,7 +22,7 @@ async def register_user(user_in: UserCreate):
         "username": user_in.username,
         "email": user_in.email,
         "full_name": user_in.full_name,
-        "role": user_in.role if user_in.role in ["citizen", "officer", "admin"] else "citizen",
+        "role": user_in.role if user_in.role in ["citizen", "patwari", "tehsildar", "officer", "admin"] else "citizen",
         "hashed_password": get_password_hash(user_in.password),
         "created_at": datetime.utcnow()
     }

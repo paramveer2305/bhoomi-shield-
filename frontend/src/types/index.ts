@@ -1,5 +1,5 @@
 // Core User and Authentication Types
-export type UserRole = 'citizen' | 'patwari' | 'tehsildar' | 'admin';
+export type UserRole = 'citizen' | 'patwari' | 'tehsildar' | 'officer' | 'admin';
 
 export interface User {
   id?: string;

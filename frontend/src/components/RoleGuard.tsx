@@ -26,13 +26,13 @@ const ROLE_ROUTES: RoleRouteConfig[] = [
   {
     layout: PatwariLayout,
     basePath: '/patwari',
-    allowedRoles: ['patwari'],
+    allowedRoles: ['patwari', 'officer'],
     redirectPath: '/patwari/inspections',
   },
   {
     layout: TehsildarLayout,
     basePath: '/tehsildar',
-    allowedRoles: ['tehsildar'],
+    allowedRoles: ['tehsildar', 'officer'],
     redirectPath: '/tehsildar/cases',
   },
   {
@@ -43,7 +43,11 @@ const ROLE_ROUTES: RoleRouteConfig[] = [
   },
 ];
 
-export const getRoleRouteConfig = (role: UserRole): RoleRouteConfig | undefined => {
+export const getRoleRouteConfig = (role: UserRole, pathname?: string): RoleRouteConfig | undefined => {
+  if (pathname) {
+    const matched = ROLE_ROUTES.find(config => config.allowedRoles.includes(role) && pathname.startsWith(config.basePath));
+    if (matched) return matched;
+  }
   return ROLE_ROUTES.find(config => config.allowedRoles.includes(role));
 };
 
@@ -53,11 +57,16 @@ export const getDashboardPathForRole = (role: UserRole): string => {
 };
 
 export const isPathAllowedForRole = (pathname: string, role: UserRole): boolean => {
-  const config = getRoleRouteConfig(role);
-  if (!config) return false;
+  const allowedConfigs = ROLE_ROUTES.filter(config => config.allowedRoles.includes(role));
+  if (allowedConfigs.length === 0) return false;
 
-  // Allow access to own role paths
-  if (pathname.startsWith(config.basePath)) return true;
+  // Allow access to any allowed basePath for this role
+  if (allowedConfigs.some(config => pathname.startsWith(config.basePath))) return true;
+
+  // Allow legacy paths for officer or admin
+  if ((role === 'officer' || role === 'admin') && (pathname.startsWith('/parcels') || pathname.startsWith('/cases') || pathname.startsWith('/alerts'))) {
+    return true;
+  }
 
   // Allow access to public/auth paths
   if (pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/unauthorized')) {
@@ -102,7 +111,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({ children, allowedRoles }) 
 
 // Dynamic role-based layout wrapper
 export const RoleBasedLayout: React.FC = () => {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
   const location = useLocation();
 
   if (isLoading || !isAuthenticated || !user) {
@@ -116,7 +125,7 @@ export const RoleBasedLayout: React.FC = () => {
     );
   }
 
-  const config = getRoleRouteConfig(user.role);
+  const config = getRoleRouteConfig(user.role, location.pathname);
 
   if (!config) {
     return (
@@ -130,7 +139,10 @@ export const RoleBasedLayout: React.FC = () => {
           <h2 className="text-xl font-semibold text-foreground mb-2">Access Denied</h2>
           <p className="text-secondary-600 mb-6">Your role "<span className="font-medium">{user.role}</span>" does not have a configured portal.</p>
           <button
-            onClick={() => window.location.href = '/logout'}
+            onClick={() => {
+              logout();
+              window.location.href = '/login';
+            }}
             className="btn-primary"
           >
             Sign Out
