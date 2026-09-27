@@ -12,7 +12,7 @@ from app.middleware.error_handler import (
     validation_exception_handler,
     generic_exception_handler,
 )
-from app.routes import health, auth, parcels, documents, risk, alerts, cases, verification, stats, websocket, admin
+from app.routes import health, auth, parcels, documents, risk, alerts, cases, verification, stats, websocket, admin, evidence
 from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
@@ -136,6 +136,7 @@ app.include_router(verification.router, prefix=settings.API_V1_STR)
 app.include_router(stats.router, prefix=settings.API_V1_STR)
 app.include_router(websocket.router, prefix=settings.API_V1_STR)
 app.include_router(admin.router, prefix=settings.API_V1_STR)
+app.include_router(evidence.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():

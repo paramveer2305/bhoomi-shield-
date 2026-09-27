@@ -116,14 +116,15 @@ async def get_parcel_timeline(parcel_id: str):
 async def export_parcel_report(parcel_id: str):
     """Generate and return a comprehensive parcel report"""
     db = get_database()
-    parcel = await db.parcels.find_one({"parcel_id": parcel_id})
+    parcel = await db.parcels.find_one({"parcel_id": parcel_id}, {"_id": 0})
     if not parcel:
         raise HTTPException(status_code=404, detail=f"Parcel record '{parcel_id}' not found")
 
     # Get related data
-    timeline = await db.parcel_events.find({"parcel_id": parcel_id}).sort("timestamp", -1).to_list(length=100)
-    documents = await db.documents.find({"parcel_id": parcel_id}).to_list(length=100)
-    risk_analysis = await db.risk_analyses.find_one({"parcel_id": parcel_id}, sort=[("timestamp", -1)])
+    timeline = await db.parcel_events.find({"parcel_id": parcel_id}, {"_id": 0}).sort("timestamp", -1).to_list(length=100)
+    documents = await db.documents.find({"parcel_id": parcel_id}, {"_id": 0}).to_list(length=100)
+    risk_analysis = await db.risk_analysis.find_one({"parcel_id": parcel_id}, {"_id": 0}, sort=[("created_at", -1)])
+    verifications = await db.verification_records.find({"parcel_id": parcel_id}, {"_id": 0}).sort("timestamp", -1).to_list(length=100)
 
     # Create comprehensive report
     report = {
@@ -131,6 +132,7 @@ async def export_parcel_report(parcel_id: str):
         "timeline": timeline,
         "documents_count": len(documents),
         "risk_analysis": risk_analysis,
+        "verifications_count": len(verifications),
         "generated_at": datetime.now(timezone.utc),
         "report_type": "COMPREHENSIVE_PARCEL_REPORT"
     }

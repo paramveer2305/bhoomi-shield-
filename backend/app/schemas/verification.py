@@ -8,6 +8,7 @@ class VerificationCreate(BaseModel):
     action_taken: str = Field(..., description="Action performed e.g. Physical On-site Inspection, Revenue Office Cross-Check")
     notes: str = Field(..., description="Explainable notes and observations during verification")
     status: str = Field("COMPLETED", description="Verification outcome e.g. COMPLETED, REJECTED, REQUIRES_FURTHER_INVESTIGATION")
+    verified_by: Optional[str] = Field(None, description="Officer conducting verification")
 
 class VerificationResponse(BaseModel):
     verification_id: str

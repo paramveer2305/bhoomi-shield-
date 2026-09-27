@@ -81,10 +81,19 @@ async def test_parcel_workflow():
         assert len(risk_data["reasons"]) > 0
         assert len(risk_data["recommended_actions"]) > 0
 
-        # 5. Fetch Risk Report
+        # 5. Fetch Risk Report & History
         res = await client.get("/api/risk/TEST-PARCEL-999")
         assert res.status_code == 200
         assert res.json()["score"] == risk_data["score"]
+
+        res_hist = await client.get("/api/risk/TEST-PARCEL-999/history")
+        assert res_hist.status_code == 200
+        history = res_hist.json()
+        assert len(history) >= 1
+        assert history[0]["parcel_id"] == "TEST-PARCEL-999"
+        assert "score" in history[0]
+        assert "reasons" in history[0]
+        assert "created_at" in history[0]
 
         # 6. Fetch Parcel Timeline
         res = await client.get("/api/parcels/TEST-PARCEL-999/timeline")
@@ -121,3 +130,70 @@ async def test_parcel_workflow():
         res = await client.get(f"/api/cases/{case_id}")
         assert res.status_code == 200
         assert res.json()["status"] == "RESOLVED"
+
+@pytest.mark.asyncio
+async def test_stats_and_priority_filter():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # Create a parcel
+        p_res = await client.post("/api/parcels", json={
+            "parcel_id": "STAT-P-001",
+            "survey_number": "11/2",
+            "district": "Dewas",
+            "tehsil": "Sonkatch",
+            "village": "Pipri",
+            "owner_name": "Gopal Sharma",
+            "area": 2.0,
+            "land_type": "Agricultural"
+        })
+        assert p_res.status_code in [201, 400]
+
+        # Create two cases with different priorities
+        await client.post("/api/cases", json={
+            "parcel_id": "STAT-P-001",
+            "title": "High Priority Task",
+            "priority": "HIGH"
+        })
+        await client.post("/api/cases", json={
+            "parcel_id": "STAT-P-001",
+            "title": "Low Priority Task",
+            "priority": "LOW"
+        })
+
+        # Test priority filter
+        high_cases = await client.get("/api/cases?priority=HIGH")
+        assert high_cases.status_code == 200
+        assert all(c["priority"] == "HIGH" for c in high_cases.json())
+        assert len(high_cases.json()) >= 1
+
+        low_cases = await client.get("/api/cases?priority=LOW")
+        assert low_cases.status_code == 200
+        assert all(c["priority"] == "LOW" for c in low_cases.json())
+        assert len(low_cases.json()) >= 1
+
+        # Run risk analysis to populate risk_analysis collection
+        await client.post("/api/risk/analyze/STAT-P-001")
+
+        # Submit verification to populate verification_records collection
+        await client.post("/api/verification", json={
+            "parcel_id": "STAT-P-001",
+            "action_taken": "Ground Inspection",
+            "notes": "Verified boundary.",
+            "status": "COMPLETED"
+        })
+
+        # Test stats dashboard endpoint returns correct counts from risk_analysis and verification_records
+        stats_res = await client.get("/api/stats/dashboard")
+        assert stats_res.status_code == 200
+        stats = stats_res.json()
+        assert stats["total_parcels"] >= 1
+        assert stats["risk_analyses"] >= 1
+        assert stats["verifications"] >= 1
+
+        # Test export parcel report using risk_analysis and verification_records
+        export_res = await client.post("/api/parcels/STAT-P-001/export")
+        assert export_res.status_code == 200
+        export_data = export_res.json()
+        assert export_data["risk_analysis"] is not None
+        assert export_data["verifications_count"] >= 1
+

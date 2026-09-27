@@ -94,7 +94,8 @@ class RiskEngineService:
         cls,
         parcel: Dict[str, Any],
         extracted_data_list: List[Dict[str, Any]],
-        historical_events: List[Dict[str, Any]] = None
+        historical_events: List[Dict[str, Any]] = None,
+        previous_risk: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
 
         w = cls._weights
@@ -228,10 +229,16 @@ class RiskEngineService:
         else:
             level = "LOW"
 
-        # Determine Trend (Baseline heuristic)
+        # Determine Trend by comparing against previous risk evaluation
         trend = "STABLE"
-        if score >= w.get("high_threshold", 60):
-            trend = "INCREASING"
+        if previous_risk and "score" in previous_risk:
+            prev_score = previous_risk["score"]
+            if score > prev_score:
+                trend = "INCREASING"
+            elif score < prev_score:
+                trend = "DECREASING"
+            else:
+                trend = "STABLE"
 
         # Generate Actionable Verification Recommendations
         if owner_mismatch_detected:

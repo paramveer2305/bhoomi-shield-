@@ -16,6 +16,12 @@ class CaseUpdate(BaseModel):
     priority: Optional[str] = None
     assigned_to: Optional[str] = None
 
+class CaseResolve(BaseModel):
+    status: str = Field("RESOLVED", description="Resolution status: RESOLVED or CLOSED")
+    closing_notes: str = Field(..., description="Official closing notes/justification")
+    legal_remarks: Optional[str] = Field(None, description="Legal or statutory remarks")
+    resolved_by: Optional[str] = Field(None, description="Resolving officer identifier")
+
 class CaseResponse(BaseModel):
     case_id: str
     parcel_id: str
@@ -25,7 +31,11 @@ class CaseResponse(BaseModel):
     priority: str
     assigned_to: Optional[str] = None
     risk_level: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
+    closing_notes: Optional[str] = None
+    legal_remarks: Optional[str] = None
+    resolved_by: Optional[str] = None
+    resolved_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

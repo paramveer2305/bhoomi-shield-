@@ -10,9 +10,16 @@ interface GetCasesParams {
   parcel_id?: string;
 }
 
+export interface CaseResolvePayload {
+  status?: 'RESOLVED' | 'CLOSED';
+  closing_notes: string;
+  legal_remarks?: string;
+  resolved_by?: string;
+}
+
 export const cases = {
   getCases: async (params?: GetCasesParams): Promise<Case[]> => {
-    const response = await apiClient.get<Case[]>('/cases/', { params });
+    const response = await apiClient.get<Case[]>('/cases', { params });
     return response.data;
   },
 
@@ -22,12 +29,17 @@ export const cases = {
   },
 
   createCase: async (data: Omit<Case, 'case_id' | 'created_at' | 'updated_at'>): Promise<Case> => {
-    const response = await apiClient.post<Case>('/cases/', data);
+    const response = await apiClient.post<Case>('/cases', data);
     return response.data;
   },
 
   updateCase: async (id: string, data: Partial<Case>): Promise<Case> => {
     const response = await apiClient.patch<Case>(`/cases/${id}`, data);
+    return response.data;
+  },
+
+  resolveCase: async (id: string, data: CaseResolvePayload): Promise<Case> => {
+    const response = await apiClient.post<Case>(`/cases/${id}/resolve`, data);
     return response.data;
   },
 };

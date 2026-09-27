@@ -154,6 +154,9 @@ async def connect_to_mongo():
         await db.verification_records.create_index("verification_id", unique=True)
         await db.verification_records.create_index("parcel_id")
         await db.verification_records.create_index("case_id")
+        await db.evidence.create_index("evidence_id", unique=True)
+        await db.evidence.create_index("case_id")
+        await db.evidence.create_index("parcel_id")
         logger.info("Database initialized successfully.")
     except Exception as idx_err:
         logger.warning(f"Index creation warning: {idx_err}")

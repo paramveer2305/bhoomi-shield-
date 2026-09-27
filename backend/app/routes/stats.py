@@ -15,10 +15,10 @@ async def get_dashboard_stats():
     active_alerts = await db.alerts.count_documents({"status": {"$in": ["ACTIVE", "ACKNOWLEDGED"]}})
 
     # Count risk analyses
-    risk_analyses = await db.risk_analyses.count_documents({})
+    risk_analyses = await db.risk_analysis.count_documents({})
 
     # Count verifications
-    verifications = await db.verifications.count_documents({})
+    verifications = await db.verification_records.count_documents({})
 
     return {
         "total_parcels": total_parcels,
