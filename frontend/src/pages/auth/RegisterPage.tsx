@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
+import type { UserRole } from '../../types';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ const RegisterPage: React.FC = () => {
     full_name: '',
     password: '',
     confirmPassword: '',
-    role: 'citizen' as 'citizen' | 'officer' | 'admin',
+    role: 'citizen' as UserRole,
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -59,10 +60,10 @@ const RegisterPage: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <div className="bg-white rounded-xl shadow-elevated p-8 text-center">
+            <CheckCircle className="w-16 h-16 text-accent-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
             <p className="text-gray-600">Redirecting to login page...</p>
           </div>
@@ -72,14 +73,14 @@ const RegisterPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-blue-600 mb-2">Bhoomi Shield</h1>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent mb-2">Bhoomi Shield</h1>
           <p className="text-gray-600">Land Dispute Early Warning System</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-white rounded-xl shadow-elevated p-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Create Account</h2>
             <p className="text-sm text-gray-600 mt-1">Register for access</p>
@@ -104,7 +105,7 @@ const RegisterPage: React.FC = () => {
                 required
                 value={formData.username}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                 placeholder="Choose a username"
               />
             </div>
@@ -120,7 +121,7 @@ const RegisterPage: React.FC = () => {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                 placeholder="your.email@example.com"
               />
             </div>
@@ -136,7 +137,7 @@ const RegisterPage: React.FC = () => {
                 required
                 value={formData.full_name}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                 placeholder="Your full name"
               />
             </div>
@@ -151,7 +152,7 @@ const RegisterPage: React.FC = () => {
                 required
                 value={formData.role}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
               >
                 <option value="citizen">Citizen</option>
                 <option value="officer">Officer</option>
@@ -170,7 +171,7 @@ const RegisterPage: React.FC = () => {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                 placeholder="Min. 6 characters"
               />
             </div>
@@ -186,7 +187,7 @@ const RegisterPage: React.FC = () => {
                 required
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                 placeholder="Confirm your password"
               />
             </div>
@@ -194,7 +195,7 @@ const RegisterPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-medium rounded-lg hover:from-primary-600 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -213,7 +214,7 @@ const RegisterPage: React.FC = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
                 Sign in here
               </Link>
             </p>

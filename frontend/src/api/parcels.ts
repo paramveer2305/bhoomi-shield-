@@ -34,4 +34,14 @@ export const parcels = {
     const response = await apiClient.get<ParcelEvent[]>(`/parcels/${id}/timeline`);
     return response.data;
   },
+
+  exportReport: async (id: string): Promise<any> => {
+    const response = await apiClient.post(`/parcels/${id}/export`);
+    return response.data;
+  },
+
+  initiateVerification: async (id: string): Promise<any> => {
+    const response = await apiClient.post(`/parcels/${id}/initiate-verification`);
+    return response.data;
+  },
 };

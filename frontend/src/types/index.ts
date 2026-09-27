@@ -1,17 +1,28 @@
 // Core User and Authentication Types
+export type UserRole = 'citizen' | 'patwari' | 'tehsildar' | 'admin';
+
 export interface User {
   id?: string;
   username: string;
   email: string;
   full_name: string;
-  role: 'citizen' | 'officer' | 'admin';
-  created_at: string;
+  name?: string;
+  role: UserRole;
+  created_at?: string;
+  // Additional profile fields for role-specific data
+  phone?: string;
+  district?: string;
+  tehsil?: string;
+  employee_id?: string;
+  department?: string;
+  badge_number?: string;
+  jurisdiction?: string[];
 }
 
 export interface Token {
   access_token: string;
   token_type: string;
-  role: string;
+  role: UserRole;
   username: string;
 }
 
@@ -25,7 +36,7 @@ export interface RegisterData {
   email: string;
   full_name: string;
   password: string;
-  role: 'citizen' | 'officer' | 'admin';
+  role: UserRole;
 }
 
 // Parcel Types
@@ -41,6 +52,7 @@ export interface Parcel {
   latitude?: number;
   longitude?: number;
   status: 'VERIFIED' | 'REQUIRES_VERIFICATION' | 'DISPUTED' | 'IN_REVIEW';
+  risk_level?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   created_at: string;
   updated_at: string;
 }

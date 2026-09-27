@@ -1,127 +1,217 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BarChart3, MapPin, AlertTriangle, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart3, MapPin, AlertTriangle, TrendingUp, ArrowRight, Shield, FileText } from 'lucide-react';
+import { stats } from '../api/stats';
 
 const DashboardHome: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [dashboardStats, setDashboardStats] = useState({
+    total_parcels: 0,
+    active_alerts: 0,
+    risk_analyses: 0,
+    verifications: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const stats = [
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await stats.getDashboardStats();
+        setDashboardStats(data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const statsCards = [
     {
       name: 'Total Parcels',
-      value: '1,234',
+      value: isLoading ? '...' : dashboardStats.total_parcels.toLocaleString(),
       icon: MapPin,
-      color: 'bg-blue-500',
+      gradient: 'from-primary-500 to-primary-600',
+      bgColor: 'bg-primary-50',
+      textColor: 'text-primary-600',
       change: '+12%',
+      changeType: 'positive',
     },
     {
       name: 'Active Alerts',
-      value: '23',
+      value: isLoading ? '...' : dashboardStats.active_alerts.toString(),
       icon: AlertTriangle,
-      color: 'bg-red-500',
+      gradient: 'from-red-500 to-red-600',
+      bgColor: 'bg-red-50',
+      textColor: 'text-red-600',
       change: '-5%',
+      changeType: 'positive',
     },
     {
       name: 'Risk Analysis',
-      value: '456',
+      value: isLoading ? '...' : dashboardStats.risk_analyses.toLocaleString(),
       icon: BarChart3,
-      color: 'bg-yellow-500',
+      gradient: 'from-amber-500 to-amber-600',
+      bgColor: 'bg-amber-50',
+      textColor: 'text-amber-600',
       change: '+8%',
+      changeType: 'neutral',
     },
     {
       name: 'Verifications',
-      value: '789',
+      value: isLoading ? '...' : dashboardStats.verifications.toLocaleString(),
       icon: TrendingUp,
-      color: 'bg-green-500',
+      gradient: 'from-accent-500 to-accent-600',
+      bgColor: 'bg-accent-50',
+      textColor: 'text-accent-600',
       change: '+15%',
+      changeType: 'positive',
     },
   ];
 
+  const quickActions = [
+    {
+      title: 'View Parcels',
+      description: 'Browse all registered land parcels',
+      icon: MapPin,
+      color: 'primary',
+      onClick: () => navigate('/parcels'),
+    },
+    {
+      title: 'Check Alerts',
+      description: 'Review active risk signals',
+      icon: AlertTriangle,
+      color: 'red',
+      onClick: () => navigate('/alerts'),
+    },
+    ...(user?.role !== 'citizen' ? [{
+      title: 'Manage Cases',
+      description: 'Handle verification requests',
+      icon: Shield,
+      color: 'accent',
+      onClick: () => navigate('/cases'),
+    }] : []),
+  ];
+
+  const recentActivities = [
+    { text: 'New parcel registered in District A', time: '2 hours ago', color: 'primary' },
+    { text: 'Risk analysis completed for Survey #1234', time: '5 hours ago', color: 'amber' },
+    { text: 'Verification completed successfully', time: '1 day ago', color: 'accent' },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-8">
       {/* Welcome Section */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, {user?.full_name}
-        </h1>
-        <p className="text-gray-600">
-          Here's an overview of your land parcels and risk monitoring system
-        </p>
+      <div className="card-elevated bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white p-8">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">
+              Welcome back, {user?.full_name || 'User'}
+            </h1>
+            <p className="text-primary-100 text-lg">
+              Bhoomi Shield - Land Dispute Early Warning & Cadastral Risk Intelligence System
+            </p>
+          </div>
+          <div className="hidden md:block p-4 bg-white/10 backdrop-blur-sm rounded-xl">
+            <Shield className="w-12 h-12 text-white" />
+          </div>
+        </div>
+        <div className="mt-6 flex items-center gap-4">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/20 backdrop-blur-sm">
+            Role: {user?.role || 'citizen'}
+          </span>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-accent-500/20 backdrop-blur-sm">
+            Active Session
+          </span>
+        </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
+        {statsCards.map((stat) => {
           const Icon = stat.icon;
           return (
             <div
               key={stat.name}
-              className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
+              className="card hover:shadow-elevated transition-all duration-300 p-6 group cursor-pointer"
             >
               <div className="flex items-center justify-between mb-4">
-                <div className={`${stat.color} p-3 rounded-lg`}>
-                  <Icon className="w-6 h-6 text-white" />
+                <div className={`${stat.bgColor} p-3 rounded-xl group-hover:scale-110 transition-transform duration-300`}>
+                  <Icon className={`w-6 h-6 ${stat.textColor}`} />
                 </div>
                 <span
-                  className={`text-sm font-medium ${
-                    stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                  className={`text-sm font-semibold px-2 py-1 rounded-lg ${
+                    stat.changeType === 'positive'
+                      ? 'text-accent-600 bg-accent-50'
+                      : 'text-amber-600 bg-amber-50'
                   }`}
                 >
                   {stat.change}
                 </span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-              <p className="text-sm text-gray-600">{stat.name}</p>
+              <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+              <p className="text-sm text-gray-600 font-medium">{stat.name}</p>
             </div>
           );
         })}
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+      <div className="card p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Quick Actions</h2>
+          <FileText className="w-6 h-6 text-gray-400" />
+        </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <button className="px-6 py-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-left">
-            <h3 className="font-semibold mb-1">View Parcels</h3>
-            <p className="text-sm text-blue-600">Browse all registered land parcels</p>
-          </button>
-          <button className="px-6 py-4 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-left">
-            <h3 className="font-semibold mb-1">Check Alerts</h3>
-            <p className="text-sm text-red-600">Review active risk signals</p>
-          </button>
-          {user?.role !== 'citizen' && (
-            <button className="px-6 py-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-left">
-              <h3 className="font-semibold mb-1">Manage Cases</h3>
-              <p className="text-sm text-green-600">Handle verification requests</p>
-            </button>
-          )}
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            const colorMap = {
+              primary: 'from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700',
+              red: 'from-red-500 to-red-600 hover:from-red-600 hover:to-red-700',
+              accent: 'from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700',
+            };
+            return (
+              <button
+                key={action.title}
+                onClick={action.onClick}
+                className={`px-6 py-5 bg-gradient-to-br ${colorMap[action.color as keyof typeof colorMap]} text-white rounded-xl shadow-soft hover:shadow-elevated transition-all duration-300 text-left group`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <Icon className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
+                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
+                </div>
+                <h3 className="font-bold text-lg mb-1">{action.title}</h3>
+                <p className="text-sm text-white/90">{action.description}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
+      <div className="card p-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Activity</h2>
         <div className="space-y-4">
-          <div className="flex items-start pb-4 border-b border-gray-100">
-            <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
-            <div className="ml-4 flex-1">
-              <p className="text-sm text-gray-900">New parcel registered in District A</p>
-              <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
-            </div>
-          </div>
-          <div className="flex items-start pb-4 border-b border-gray-100">
-            <div className="flex-shrink-0 w-2 h-2 mt-2 bg-yellow-500 rounded-full"></div>
-            <div className="ml-4 flex-1">
-              <p className="text-sm text-gray-900">Risk analysis completed for Survey #1234</p>
-              <p className="text-xs text-gray-500 mt-1">5 hours ago</p>
-            </div>
-          </div>
-          <div className="flex items-start">
-            <div className="flex-shrink-0 w-2 h-2 mt-2 bg-green-500 rounded-full"></div>
-            <div className="ml-4 flex-1">
-              <p className="text-sm text-gray-900">Verification completed successfully</p>
-              <p className="text-xs text-gray-500 mt-1">1 day ago</p>
-            </div>
-          </div>
+          {recentActivities.map((activity, index) => {
+            const colorMap = {
+              primary: 'bg-primary-500',
+              amber: 'bg-amber-500',
+              accent: 'bg-accent-500',
+            };
+            return (
+              <div key={index} className="flex items-start pb-4 border-b border-gray-100 last:border-0 group hover:bg-gray-50/50 -mx-4 px-4 py-3 rounded-lg transition-colors duration-200">
+                <div className={`flex-shrink-0 w-2 h-2 mt-2 ${colorMap[activity.color as keyof typeof colorMap]} rounded-full group-hover:scale-125 transition-transform duration-200`}></div>
+                <div className="ml-4 flex-1">
+                  <p className="text-sm text-gray-900 font-medium">{activity.text}</p>
+                  <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

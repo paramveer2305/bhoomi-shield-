@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, BackgroundTasks
 from typing import List, Optional
 from datetime import datetime
 import uuid
 
 from app.schemas.alert import AlertCreate, AlertUpdate, AlertResponse
 from app.database import get_database
+from app.services.notification import send_high_risk_alert
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
@@ -30,9 +31,9 @@ async def list_alerts(
     return alerts
 
 @router.post("", response_model=AlertResponse, status_code=status.HTTP_201_CREATED)
-async def create_alert(alert_in: AlertCreate):
+async def create_alert(alert_in: AlertCreate, background_tasks: BackgroundTasks):
     db = get_database()
-    
+
     parcel = await db.parcels.find_one({"parcel_id": alert_in.parcel_id})
     if not parcel:
         raise HTTPException(status_code=404, detail=f"Parcel ID '{alert_in.parcel_id}' not found")
@@ -65,6 +66,30 @@ async def create_alert(alert_in: AlertCreate):
         "metadata": {"alert_id": alert_id, "severity": alert_in.severity}
     }
     await db.parcel_events.insert_one(event_dict)
+
+    # Send notifications for HIGH/CRITICAL alerts
+    if alert_in.severity in ["HIGH", "CRITICAL"]:
+        citizen_phone = parcel.get("owner_phone") or parcel.get("phone")
+        if citizen_phone:
+            background_tasks.add_task(send_high_risk_alert, parcel, alert_dict, citizen_phone)
+
+        # Also log audit event
+        await db.audit_logs.insert_one({
+            "log_id": f"LOG-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-ALERT",
+            "timestamp": datetime.utcnow(),
+            "actor_id": "ALERT_SERVICE",
+            "actor_name": "BHOOMI-SHIELD Alert Service",
+            "actor_role": "system",
+            "action": "ALERT_CREATED",
+            "resource_type": "alert",
+            "resource_id": alert_id,
+            "details": {
+                "parcel_id": alert_in.parcel_id,
+                "severity": alert_in.severity,
+                "title": alert_in.title,
+                "notified": bool(citizen_phone)
+            }
+        })
 
     return alert_dict
 

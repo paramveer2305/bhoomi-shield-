@@ -23,20 +23,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    const timeoutId = setTimeout(() => {
+      if (isMounted) setIsLoading(false);
+    }, 2500);
+
     const initAuth = async () => {
       const token = localStorage.getItem('access_token');
       if (token) {
         try {
           const userData = await auth.getMe();
-          setUser(userData);
+          if (isMounted) setUser(userData);
         } catch (_error) {
           localStorage.removeItem('access_token');
         }
       }
-      setIsLoading(false);
+      if (isMounted) setIsLoading(false);
+      clearTimeout(timeoutId);
     };
 
     initAuth();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const login = async (credentials: LoginCredentials) => {

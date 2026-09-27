@@ -3,10 +3,12 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { parcels } from '../../api/parcels';
 import type { Parcel, ParcelEvent } from '../../types';
 import ParcelTimeline from '../../components/parcels/ParcelTimeline';
+import ParcelMap from '../../components/parcels/ParcelMap';
 import DocumentUpload from '../../components/documents/DocumentUpload';
 import DocumentList from '../../components/documents/DocumentList';
 import RiskDashboard from '../../components/risk/RiskDashboard';
 import VerificationTab from '../../components/verification/VerificationTab';
+import { generateParcelPDFReport } from '../../utils/pdfGenerator';
 import {
   MapPin,
   ChevronLeft,
@@ -20,6 +22,8 @@ import {
   User,
   Plus,
   Upload,
+  Download,
+  Shield,
 } from 'lucide-react';
 
 const getStatusBadgeClass = (status: string): string => {
@@ -52,6 +56,8 @@ const ParcelDetailPage: React.FC = () => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'risk' | 'cases'>('overview');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isInitiatingVerification, setIsInitiatingVerification] = useState(false);
 
   useEffect(() => {
     const fetchParcelData = async () => {
@@ -88,6 +94,60 @@ const ParcelDetailPage: React.FC = () => {
   const handleDocumentUploaded = () => {
     setShowUploadModal(false);
     // The DocumentList will refetch on its own or we could trigger a refresh
+  };
+
+  const handleExportReport = async () => {
+    if (!parcel_id || !parcel) return;
+
+    setIsExporting(true);
+    try {
+      const reportData = await parcels.exportReport(parcel_id);
+      generateParcelPDFReport({
+        parcel: reportData.parcel || parcel,
+        timeline: reportData.timeline || timeline,
+        documents_count: reportData.documents_count || 0,
+        risk_analysis: reportData.risk_analysis || null,
+        generated_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error('Failed to export PDF report:', err);
+      // Fallback to local data PDF generation
+      generateParcelPDFReport({
+        parcel: parcel,
+        timeline: timeline,
+        documents_count: 0,
+        risk_analysis: null,
+        generated_at: new Date().toISOString(),
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleInitiateVerification = async () => {
+    if (!parcel_id) return;
+
+    if (!confirm('Are you sure you want to initiate a verification process for this parcel?')) {
+      return;
+    }
+
+    setIsInitiatingVerification(true);
+    try {
+      const result = await parcels.initiateVerification(parcel_id);
+      alert(`Verification initiated successfully! Case ID: ${result.case_id}`);
+
+      // Refresh parcel data to show updated status
+      const updatedParcel = await parcels.getParcel(parcel_id);
+      setParcel(updatedParcel);
+
+      // Optionally switch to cases tab
+      setActiveTab('cases');
+    } catch (err) {
+      console.error('Failed to initiate verification:', err);
+      alert('Failed to initiate verification. Please try again.');
+    } finally {
+      setIsInitiatingVerification(false);
+    }
   };
 
   if (isLoading) {
@@ -136,11 +196,39 @@ const ParcelDetailPage: React.FC = () => {
           Back to Parcels
         </button>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
-            Export Report
+          <button
+            onClick={handleExportReport}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isExporting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Exporting...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                <span>Export Report</span>
+              </>
+            )}
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm hover:shadow">
-            Initiate Verification
+          <button
+            onClick={handleInitiateVerification}
+            disabled={isInitiatingVerification || parcel?.status === 'IN_REVIEW'}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 transition-all text-sm font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isInitiatingVerification ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Initiating...</span>
+              </>
+            ) : (
+              <>
+                <Shield className="w-4 h-4" />
+                <span>Initiate Verification</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -257,7 +345,7 @@ const ParcelDetailPage: React.FC = () => {
       <div className="mt-6">
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Map Placeholder */}
+            {/* Interactive Map */}
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
@@ -271,10 +359,13 @@ const ParcelDetailPage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <div className="h-96 bg-gray-100 flex flex-col items-center justify-center text-gray-400">
-                  <MapPin className="w-12 h-12 mb-3 text-gray-300" />
-                  <p className="text-sm font-medium">Map View</p>
-                  <p className="text-xs text-gray-500 mt-1">Geospatial integration coming soon</p>
+                <div className="p-4">
+                  <ParcelMap
+                    latitude={parcel.latitude}
+                    longitude={parcel.longitude}
+                    parcelId={parcel.parcel_id}
+                    riskLevel={parcel.risk_level || 'LOW'}
+                  />
                 </div>
               </div>
             </div>

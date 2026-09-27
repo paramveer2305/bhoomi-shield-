@@ -12,7 +12,7 @@ from app.middleware.error_handler import (
     validation_exception_handler,
     generic_exception_handler,
 )
-from app.routes import health, auth, parcels, documents, risk, alerts, cases, verification
+from app.routes import health, auth, parcels, documents, risk, alerts, cases, verification, stats, websocket, admin
 from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
@@ -109,10 +109,11 @@ app = FastAPI(
 )
 
 # Configure CORS
-origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()]
+origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip() and origin.strip() != "*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if origins else ["*"],
+    allow_origins=origins,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -132,6 +133,9 @@ app.include_router(risk.router, prefix=settings.API_V1_STR)
 app.include_router(alerts.router, prefix=settings.API_V1_STR)
 app.include_router(cases.router, prefix=settings.API_V1_STR)
 app.include_router(verification.router, prefix=settings.API_V1_STR)
+app.include_router(stats.router, prefix=settings.API_V1_STR)
+app.include_router(websocket.router, prefix=settings.API_V1_STR)
+app.include_router(admin.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():

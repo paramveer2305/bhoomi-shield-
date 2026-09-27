@@ -1,7 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #eef2ff;
+  /* ============================================
+     BHOOMI SHIELD - ENTERPRISE COLOR PALETTE
+     ============================================ */
+
+  /* Primary - Deep Indigo (Authority & Trust) */
+  --color-primary-50:  #eef2ff;
   --color-primary-100: #e0e7ff;
   --color-primary-200: #c7d2fe;
   --color-primary-300: #a5b4fc;
@@ -13,45 +18,716 @@
   --color-primary-900: #312e81;
   --color-primary-950: #1e1b4b;
 
-  --color-accent-50: #ecfdf5;
-  --color-accent-100: #d1fae5;
-  --color-accent-200: #a7f3d0;
-  --color-accent-300: #6ee7b7;
-  --color-accent-400: #34d399;
-  --color-accent-500: #10b981;
-  --color-accent-600: #059669;
-  --color-accent-700: #047857;
+  /* Secondary - Slate (Neutral Professional) */
+  --color-secondary-50:  #f8fafc;
+  --color-secondary-100: #f1f5f9;
+  --color-secondary-200: #e2e8f0;
+  --color-secondary-300: #cbd5e1;
+  --color-secondary-400: #94a3b8;
+  --color-secondary-500: #64748b;
+  --color-secondary-600: #475569;
+  --color-secondary-700: #334155;
+  --color-secondary-800: #1e293b;
+  --color-secondary-900: #0f172a;
+  --color-secondary-950: #020617;
 
-  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  /* Destructive - Crimson (High Risk & Alerts) */
+  --color-destructive-50:  #fef2f2;
+  --color-destructive-100: #fee2e2;
+  --color-destructive-200: #fecaca;
+  --color-destructive-300: #fca5a5;
+  --color-destructive-400: #f87171;
+  --color-destructive-500: #ef4444;
+  --color-destructive-600: #dc2626;
+  --color-destructive-700: #b91c1c;
+  --color-destructive-800: #991b1b;
+  --color-destructive-900: #7f1d1d;
+
+  /* Success - Emerald (Verified & Safe) */
+  --color-success-50:  #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  --color-success-800: #166534;
+  --color-success-900: #14532d;
+
+  /* Warning - Amber (Pending & Attention) */
+  --color-warning-50:  #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+
+  /* Info - Sky (Information & Neutral) */
+  --color-info-50:  #f0f9ff;
+  --color-info-100: #e0f2fe;
+  --color-info-200: #bae6fd;
+  --color-info-300: #7dd3fc;
+  --color-info-400: #38bdf8;
+  --color-info-500: #0ea5e9;
+  --color-info-600: #0284c7;
+  --color-info-700: #0369a1;
+  --color-info-800: #075985;
+  --color-info-900: #0c4a6e;
+
+  /* ============================================
+     SEMANTIC COLOR ALIASES (Shadcn UI Style)
+     ============================================ */
+  --color-background: var(--color-secondary-50);
+  --color-foreground: var(--color-secondary-950);
+  --color-card: #ffffff;
+  --color-card-foreground: var(--color-secondary-950);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-secondary-950);
+  --color-primary: var(--color-primary-600);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-secondary-100);
+  --color-secondary-foreground: var(--color-secondary-900);
+  --color-muted: var(--color-secondary-100);
+  --color-muted-foreground: var(--color-secondary-500);
+  --color-accent: var(--color-primary-100);
+  --color-accent-foreground: var(--color-primary-900);
+  --color-destructive: var(--color-destructive-600);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--color-secondary-200);
+  --color-input: var(--color-secondary-200);
+  --color-ring: var(--color-primary-500);
+  --color-success: var(--color-success-600);
+  --color-success-foreground: #ffffff;
+  --color-warning: var(--color-warning-600);
+  --color-warning-foreground: #ffffff;
+
+  /* ============================================
+     RISK LEVEL COLORS
+     ============================================ */
+  --color-risk-low: var(--color-success-600);
+  --color-risk-low-bg: var(--color-success-100);
+  --color-risk-medium: var(--color-warning-600);
+  --color-risk-medium-bg: var(--color-warning-100);
+  --color-risk-high: var(--color-destructive-600);
+  --color-risk-high-bg: var(--color-destructive-100);
+  --color-risk-critical: #991b1b;
+  --color-risk-critical-bg: #fee2e2;
+
+  /* ============================================
+     ROLE THEMES
+     ============================================ */
+  --color-role-citizen: var(--color-primary-600);
+  --color-role-citizen-bg: var(--color-primary-50);
+  --color-role-patwari: var(--color-success-600);
+  --color-role-patwari-bg: var(--color-success-50);
+  --color-role-tehsildar: var(--color-destructive-600);
+  --color-role-tehsildar-bg: var(--color-destructive-50);
+  --color-role-admin: var(--color-secondary-800);
+  --color-role-admin-bg: var(--color-secondary-100);
+
+  /* ============================================
+     SHADOWS & EFFECTS
+     ============================================ */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
   --shadow-elevated: 0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
+  --shadow-glow-primary: 0 0 0 1px var(--color-primary-500), 0 0 20px -5px var(--color-primary-500);
+  --shadow-glow-destructive: 0 0 0 1px var(--color-destructive-500), 0 0 20px -5px var(--color-destructive-500);
+  --shadow-glow-success: 0 0 0 1px var(--color-success-500), 0 0 20px -5px var(--color-success-500);
+
+  /* ============================================
+     RADIUS & TRANSITIONS
+     ============================================ */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ============================================
+     Z-INDEX SCALE
+     ============================================ */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
 }
 
 @layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply antialiased;
-    background: linear-gradient(135deg, #f9fafb 0%, #eef2ff 50%, #ecfdf5 100%);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     min-height: 100vh;
+  }
+
+  /* Focus visible for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Selection colors */
+  ::selection {
+    @apply bg-primary-200 text-primary-900;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-secondary-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-secondary-300 rounded-full hover:bg-secondary-400;
+  }
+
+  ::-webkit-scrollbar-corner {
+    @apply bg-secondary-100;
   }
 }
 
 @layer components {
-  .card {
-    @apply bg-white rounded-xl shadow-soft border border-gray-100 backdrop-blur-sm;
+  /* ============================================
+     BASE COMPONENT CLASSES
+     ============================================ */
+
+  /* Card Variants */
+  .card,
+  .card-hover {
+    background-color: var(--color-card);
+    color: var(--color-card-foreground);
+    @apply rounded-xl border border-border shadow-sm transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5;
   }
 
   .card-elevated {
-    @apply bg-white rounded-xl shadow-elevated border border-gray-100;
+    background-color: var(--color-card);
+    color: var(--color-card-foreground);
+    @apply rounded-xl border border-border shadow-elevated;
+  }
+
+  .card-outlined {
+    color: var(--color-card-foreground);
+    @apply bg-transparent rounded-xl border-2 border-border;
+  }
+
+  .card-glass {
+    @apply bg-white/80 backdrop-blur-xl rounded-xl border border-white/20 shadow-lg;
+  }
+
+  /* Button Variants */
+  .btn,
+  .btn-sm,
+  .btn-lg,
+  .btn-icon,
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline,
+  .btn-ghost,
+  .btn-destructive,
+  .btn-success,
+  .btn-link {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+           disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed
+           whitespace-nowrap;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm gap-1.5;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base gap-2;
+  }
+
+  .btn-icon {
+    @apply p-2;
   }
 
   .btn-primary {
-    @apply px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md;
+    @apply bg-primary text-primary-foreground hover:bg-primary-700 shadow-sm hover:shadow-md
+           active:bg-primary-800 active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary-200
+           border border-border hover:border-border;
   }
 
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  .btn-outline {
+    @apply bg-transparent border-2 border-border hover:bg-accent hover:text-accent-foreground;
   }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive-700
+           shadow-sm hover:shadow-md active:scale-[0.98];
+  }
+
+  .btn-success {
+    @apply bg-success text-success-foreground hover:bg-success-700
+           shadow-sm hover:shadow-md active:scale-[0.98];
+  }
+
+  .btn-link {
+    @apply bg-transparent text-primary underline-offset-4 hover:underline;
+  }
+
+  /* Badge Variants */
+  .badge,
+  .badge-primary,
+  .badge-secondary,
+  .badge-success,
+  .badge-warning,
+  .badge-destructive,
+  .badge-info,
+  .badge-outline,
+  .badge-risk-low,
+  .badge-risk-medium,
+  .badge-risk-high,
+  .badge-risk-critical,
+  .badge-role-citizen,
+  .badge-role-patwari,
+  .badge-role-tehsildar,
+  .badge-role-admin,
+  .badge-status-verified,
+  .badge-status-pending,
+  .badge-status-disputed,
+  .badge-status-in-review {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-200;
+  }
+
+  .badge-primary {
+    @apply bg-primary-100 text-primary-800 border border-primary-200;
+  }
+
+  .badge-secondary {
+    @apply bg-secondary-100 text-secondary-800 border border-secondary-200;
+  }
+
+  .badge-success {
+    @apply bg-success-100 text-success-800 border border-success-200;
+  }
+
+  .badge-warning {
+    @apply bg-warning-100 text-warning-800 border border-warning-200;
+  }
+
+  .badge-destructive {
+    @apply bg-destructive-100 text-destructive-800 border border-destructive-200;
+  }
+
+  .badge-info {
+    @apply bg-info-100 text-info-800 border border-info-200;
+  }
+
+  .badge-outline {
+    @apply bg-transparent border border-border text-muted-foreground;
+  }
+
+  /* Risk Level Badges */
+  .badge-risk-low {
+    @apply bg-risk-low-bg text-risk-low border border-success-200;
+  }
+
+  .badge-risk-medium {
+    @apply bg-risk-medium-bg text-risk-medium border border-warning-200;
+  }
+
+  .badge-risk-high {
+    @apply bg-risk-high-bg text-risk-high border border-destructive-200;
+  }
+
+  .badge-risk-critical {
+    @apply bg-risk-critical-bg text-risk-critical border border-destructive-300 animate-pulse;
+  }
+
+  /* Role Badges */
+  .badge-role-citizen {
+    @apply bg-role-citizen-bg text-role-citizen border border-primary-200;
+  }
+
+  .badge-role-patwari {
+    @apply bg-role-patwari-bg text-role-patwari border border-success-200;
+  }
+
+  .badge-role-tehsildar {
+    @apply bg-role-tehsildar-bg text-role-tehsildar border border-destructive-200;
+  }
+
+  .badge-role-admin {
+    @apply bg-role-admin-bg text-role-admin border border-secondary-200;
+  }
+
+  /* Status Badges */
+  .badge-status-verified {
+    @apply bg-success-100 text-success-800 border border-success-200;
+  }
+
+  .badge-status-pending {
+    @apply bg-warning-100 text-warning-800 border border-warning-200;
+  }
+
+  .badge-status-disputed {
+    @apply bg-destructive-100 text-destructive-800 border border-destructive-200;
+  }
+
+  .badge-status-in-review {
+    @apply bg-info-100 text-info-800 border border-info-200;
+  }
+
+  /* Input Styles */
+  .input,
+  .input-error,
+  .textarea,
+  .select {
+    @apply w-full px-3 py-2 bg-background border border-input rounded-lg text-foreground
+           placeholder:text-muted-foreground
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+           disabled:cursor-not-allowed disabled:opacity-50
+           transition-all duration-200;
+  }
+
+  .input-error {
+    @apply border-destructive focus-visible:ring-destructive;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-foreground mb-1.5;
+  }
+
+  .textarea {
+    @apply min-h-[80px] resize-y;
+  }
+
+  /* Select Styles */
+  .select {
+    @apply appearance-none bg-no-repeat bg-right pr-10;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-size: 1.5rem 1.5rem;
+  }
+
+  /* Table Styles */
+  .table-container {
+    @apply w-full overflow-x-auto rounded-lg border border-border;
+  }
+
+  .table {
+    @apply w-full caption-bottom text-sm;
+  }
+
+  .table-header {
+    @apply bg-muted/50;
+  }
+
+  .table-row {
+    @apply border-b border-border transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted;
+  }
+
+  .table-head {
+    @apply h-12 px-4 text-left align-middle font-medium text-muted-foreground
+           border-b border-border text-xs uppercase tracking-wider;
+  }
+
+  .table-cell {
+    @apply p-4 align-middle border-b border-border/50;
+  }
+
+  .table-footer {
+    @apply bg-muted/50 font-medium;
+  }
+
+  /* Form Group */
+  .form-group {
+    @apply space-y-2;
+  }
+
+  .form-error {
+    @apply text-sm text-destructive;
+  }
+
+  .form-hint {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Animation Classes */
+  .animate-in {
+    animation: animate-in var(--transition-normal) ease-out forwards;
+  }
+
+  .animate-out {
+    animation: animate-out var(--transition-fast) ease-in forwards;
+  }
+
+  .slide-in-from-top {
+    animation: slide-in-from-top var(--transition-normal) ease-out forwards;
+  }
+
+  .slide-in-from-bottom {
+    animation: slide-in-from-bottom var(--transition-normal) ease-out forwards;
+  }
+
+  .slide-in-from-left {
+    animation: slide-in-from-left var(--transition-normal) ease-out forwards;
+  }
+
+  .slide-in-from-right {
+    animation: slide-in-from-right var(--transition-normal) ease-out forwards;
+  }
+
+  .fade-in {
+    animation: fade-in var(--transition-normal) ease-out forwards;
+  }
+
+  .fade-out {
+    animation: fade-out var(--transition-fast) ease-in forwards;
+  }
+
+  .scale-in {
+    animation: scale-in var(--transition-fast) ease-out forwards;
+  }
+
+  .scale-out {
+    animation: scale-out var(--transition-fast) ease-in forwards;
+  }
+
+  /* Skeleton Loading */
+  .skeleton,
+  .skeleton-text,
+  .skeleton-title,
+  .skeleton-avatar,
+  .skeleton-card {
+    @apply animate-pulse bg-secondary-200 rounded;
+  }
+
+  .skeleton-text {
+    @apply h-4 w-full;
+  }
+
+  .skeleton-title {
+    @apply h-6 w-3/4;
+  }
+
+  .skeleton-avatar {
+    @apply rounded-full w-10 h-10;
+  }
+
+  .skeleton-card {
+    @apply rounded-xl p-6 space-y-4;
+  }
+}
+
+@layer utilities {
+  /* Custom utility classes */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl;
+  }
+
+  .glass-dark {
+    @apply bg-secondary-900/80 backdrop-blur-xl;
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
+  }
+
+  .gradient-success {
+    background: linear-gradient(135deg, var(--color-success-600) 0%, var(--color-success-800) 100%);
+  }
+
+  .gradient-destructive {
+    background: linear-gradient(135deg, var(--color-destructive-600) 0%, var(--color-destructive-800) 100%);
+  }
+
+  .gradient-role-citizen {
+    background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
+  }
+
+  .gradient-role-patwari {
+    background: linear-gradient(135deg, var(--color-success-600) 0%, var(--color-success-800) 100%);
+  }
+
+  .gradient-role-tehsildar {
+    background: linear-gradient(135deg, var(--color-destructive-600) 0%, var(--color-destructive-800) 100%);
+  }
+
+  .gradient-role-admin {
+    background: linear-gradient(135deg, var(--color-secondary-800) 0%, var(--color-secondary-950) 100%);
+  }
+}
+
+/* ============================================
+   KEYFRAME ANIMATIONS
+   ============================================ */
+@keyframes animate-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes animate-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* Shimmer animation for skeletons */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-secondary-200) 25%,
+    var(--color-secondary-100) 50%,
+    var(--color-secondary-200) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }

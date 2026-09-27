@@ -111,3 +111,94 @@ async def get_parcel_timeline(parcel_id: str):
     cursor = db.parcel_events.find({"parcel_id": parcel_id}).sort("timestamp", -1)
     events = await cursor.to_list(length=100)
     return events
+
+@router.post("/{parcel_id}/export")
+async def export_parcel_report(parcel_id: str):
+    """Generate and return a comprehensive parcel report"""
+    db = get_database()
+    parcel = await db.parcels.find_one({"parcel_id": parcel_id})
+    if not parcel:
+        raise HTTPException(status_code=404, detail=f"Parcel record '{parcel_id}' not found")
+
+    # Get related data
+    timeline = await db.parcel_events.find({"parcel_id": parcel_id}).sort("timestamp", -1).to_list(length=100)
+    documents = await db.documents.find({"parcel_id": parcel_id}).to_list(length=100)
+    risk_analysis = await db.risk_analyses.find_one({"parcel_id": parcel_id}, sort=[("timestamp", -1)])
+
+    # Create comprehensive report
+    report = {
+        "parcel": parcel,
+        "timeline": timeline,
+        "documents_count": len(documents),
+        "risk_analysis": risk_analysis,
+        "generated_at": datetime.now(timezone.utc),
+        "report_type": "COMPREHENSIVE_PARCEL_REPORT"
+    }
+
+    # Record export event
+    event_dict = {
+        "event_id": f"EVT-{uuid.uuid4().hex[:8].upper()}",
+        "parcel_id": parcel_id,
+        "event_type": "REPORT_EXPORTED",
+        "title": "Parcel Report Exported",
+        "description": f"Comprehensive report generated for parcel {parcel_id}",
+        "timestamp": datetime.now(timezone.utc),
+        "actor": "SYSTEM",
+        "metadata": {"report_type": "COMPREHENSIVE"}
+    }
+    await db.parcel_events.insert_one(event_dict)
+
+    return report
+
+@router.post("/{parcel_id}/initiate-verification")
+async def initiate_verification(parcel_id: str):
+    """Initiate a verification process for a parcel"""
+    db = get_database()
+    parcel = await db.parcels.find_one({"parcel_id": parcel_id})
+    if not parcel:
+        raise HTTPException(status_code=404, detail=f"Parcel record '{parcel_id}' not found")
+
+    # Create verification case
+    case_id = f"CASE-{uuid.uuid4().hex[:8].upper()}"
+    now = datetime.now(timezone.utc)
+
+    case_dict = {
+        "case_id": case_id,
+        "parcel_id": parcel_id,
+        "title": f"Verification Request for {parcel_id}",
+        "description": f"Verification initiated for parcel in {parcel['village']}, {parcel['district']}",
+        "status": "OPEN",
+        "priority": "MEDIUM",
+        "risk_level": "MEDIUM",
+        "assigned_to": None,
+        "created_at": now,
+        "updated_at": now
+    }
+
+    await db.cases.insert_one(case_dict)
+
+    # Update parcel status
+    await db.parcels.update_one(
+        {"parcel_id": parcel_id},
+        {"$set": {"status": "IN_REVIEW", "updated_at": now}}
+    )
+
+    # Record verification initiation event
+    event_dict = {
+        "event_id": f"EVT-{uuid.uuid4().hex[:8].upper()}",
+        "parcel_id": parcel_id,
+        "event_type": "VERIFICATION_INITIATED",
+        "title": "Verification Process Initiated",
+        "description": f"Verification case {case_id} created for parcel {parcel_id}",
+        "timestamp": now,
+        "actor": "OFFICER",
+        "metadata": {"case_id": case_id}
+    }
+    await db.parcel_events.insert_one(event_dict)
+
+    return {
+        "message": "Verification initiated successfully",
+        "case_id": case_id,
+        "parcel_id": parcel_id,
+        "status": "IN_REVIEW"
+    }
