@@ -8,7 +8,12 @@ export const risk = {
   },
 
   analyzeRisk: async (parcelId: string, payload?: any): Promise<RiskAnalysis> => {
-    const response = await apiClient.post<RiskAnalysis>(`/risk/${parcelId}/analyze`, payload || {});
+    const response = await apiClient.post<RiskAnalysis>(`/risk/analyze/${parcelId}`, payload || {});
+    return response.data;
+  },
+
+  getRiskHistory: async (parcelId: string): Promise<RiskAnalysis[]> => {
+    const response = await apiClient.get<RiskAnalysis[]>(`/risk/${parcelId}/history`);
     return response.data;
   },
 };

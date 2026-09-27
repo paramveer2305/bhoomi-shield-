@@ -56,6 +56,28 @@ async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)):
         "role": user["role"]
     }
 
+async def get_optional_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[dict]:
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        if not username:
+            return None
+        db = get_database()
+        user = await db.users.find_one({"username": username})
+        if user:
+            return {
+                "id": str(user.get("_id")),
+                "username": user["username"],
+                "email": user["email"],
+                "full_name": user.get("full_name", user["username"]),
+                "role": user.get("role", "REVENUE_OFFICER")
+            }
+    except Exception:
+        pass
+    return None
+
 def require_roles(roles: list[str]):
     async def role_checker(current_user: dict = Depends(get_current_user)):
         if current_user["role"] not in roles:

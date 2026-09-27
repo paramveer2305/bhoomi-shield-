@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from typing import Optional
+from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
 
@@ -33,8 +33,11 @@ async def analyze_parcel_risk(parcel_id: str, payload: Optional[RiskAnalyzeReque
     event_cursor = db.parcel_events.find({"parcel_id": parcel_id})
     events = await event_cursor.to_list(length=100)
 
+    # Fetch previous risk record for dynamic trend comparison
+    previous_risk = await db.risk_analysis.find_one({"parcel_id": parcel_id}, sort=[("created_at", -1)])
+
     # Perform risk evaluation
-    analysis_result = RiskEngineService.evaluate_risk(parcel, documents, events)
+    analysis_result = RiskEngineService.evaluate_risk(parcel, documents, events, previous_risk=previous_risk)
 
     risk_id = f"RSK-{uuid.uuid4().hex[:8].upper()}"
     now = datetime.now(timezone.utc)
@@ -80,6 +83,22 @@ async def analyze_parcel_risk(parcel_id: str, payload: Optional[RiskAnalyzeReque
         await db.alerts.insert_one(alert_dict)
 
     return risk_dict
+
+@router.get("/{parcel_id}/history", response_model=List[RiskAnalysisResponse])
+async def get_risk_history(parcel_id: str):
+    db = get_database()
+    parcel = await db.parcels.find_one({"parcel_id": parcel_id})
+    if not parcel:
+        raise HTTPException(status_code=404, detail=f"Parcel ID '{parcel_id}' not found")
+
+    cursor = db.risk_analysis.find({"parcel_id": parcel_id}).sort("created_at", 1)
+    history = await cursor.to_list(length=100)
+    if not history:
+        # Perform auto-analysis if none exists yet to establish baseline
+        initial = await analyze_parcel_risk(parcel_id)
+        history = [initial]
+
+    return history
 
 @router.get("/{parcel_id}", response_model=RiskAnalysisResponse)
 async def get_latest_risk_analysis(parcel_id: str):

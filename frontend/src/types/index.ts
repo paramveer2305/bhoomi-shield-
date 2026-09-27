@@ -120,6 +120,10 @@ export interface Case {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   assigned_to?: string;
   risk_level?: string;
+  closing_notes?: string;
+  legal_remarks?: string;
+  resolved_by?: string;
+  resolved_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -133,6 +137,26 @@ export interface Verification {
   notes: string;
   verified_by: string;
   status: string;
+  timestamp: string;
+}
+
+// Evidence Types
+export type EvidenceType = 'SITE_PHOTO' | 'BOUNDARY_MEASUREMENT' | 'WITNESS_RECORD';
+
+export interface GeoCoordinates {
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface Evidence {
+  evidence_id: string;
+  parcel_id: string;
+  case_id: string;
+  evidence_type: EvidenceType;
+  file_url?: string;
+  geo_coordinates?: GeoCoordinates;
+  uploaded_by: string;
+  notes?: string;
   timestamp: string;
 }
 

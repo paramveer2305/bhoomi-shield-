@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Depends, Query, status
 from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
 
-from app.schemas.case import CaseCreate, CaseUpdate, CaseResponse
+from app.schemas.case import CaseCreate, CaseUpdate, CaseResolve, CaseResponse
 from app.database import get_database
+from app.utils.auth import get_optional_current_user
 
 router = APIRouter(prefix="/cases", tags=["Cases"])
 
@@ -12,6 +13,7 @@ router = APIRouter(prefix="/cases", tags=["Cases"])
 async def list_cases(
     parcel_id: Optional[str] = None,
     status_filter: Optional[str] = Query(None, alias="status"),
+    priority: Optional[str] = None,
     assigned_to: Optional[str] = None,
     limit: int = 50,
     skip: int = 0
@@ -22,6 +24,8 @@ async def list_cases(
         query["parcel_id"] = parcel_id
     if status_filter:
         query["status"] = status_filter
+    if priority:
+        query["priority"] = priority
     if assigned_to:
         query["assigned_to"] = assigned_to
 
@@ -113,6 +117,75 @@ async def update_case(case_id: str, case_in: CaseUpdate):
             "metadata": {"case_id": case_id, "new_status": update_data["status"]}
         }
         await db.parcel_events.insert_one(event_dict)
+
+    updated_case = await db.cases.find_one({"case_id": case_id})
+    return updated_case
+
+@router.post("/{case_id}/resolve", response_model=CaseResponse)
+async def resolve_case(
+    case_id: str,
+    resolve_in: CaseResolve,
+    current_user: Optional[dict] = Depends(get_optional_current_user)
+):
+    db = get_database()
+    case_doc = await db.cases.find_one({"case_id": case_id})
+    if not case_doc:
+        raise HTTPException(status_code=404, detail=f"Case ID '{case_id}' not found")
+
+    now = datetime.now(timezone.utc)
+
+    # Determine resolving officer
+    officer_name = None
+    if current_user:
+        officer_name = current_user.get("full_name") or current_user.get("username")
+    if not officer_name and resolve_in.resolved_by:
+        officer_name = resolve_in.resolved_by
+    if not officer_name:
+        officer_name = case_doc.get("assigned_to") or "REVENUE_OFFICER"
+
+    final_status = resolve_in.status if resolve_in.status in ["RESOLVED", "CLOSED"] else "RESOLVED"
+
+    update_fields = {
+        "status": final_status,
+        "closing_notes": resolve_in.closing_notes,
+        "legal_remarks": resolve_in.legal_remarks,
+        "resolved_by": officer_name,
+        "resolved_at": now,
+        "updated_at": now
+    }
+
+    await db.cases.update_one({"case_id": case_id}, {"$set": update_fields})
+
+    # Resolve associated active alerts for this parcel
+    await db.alerts.update_many(
+        {"parcel_id": case_doc["parcel_id"], "status": "ACTIVE"},
+        {"$set": {"status": "RESOLVED", "updated_at": now}}
+    )
+
+    # Update parcel status to VERIFIED
+    await db.parcels.update_one(
+        {"parcel_id": case_doc["parcel_id"]},
+        {"$set": {"status": "VERIFIED", "updated_at": now}}
+    )
+
+    # Record parcel event
+    event_dict = {
+        "event_id": f"EVT-{uuid.uuid4().hex[:8].upper()}",
+        "parcel_id": case_doc["parcel_id"],
+        "event_type": "CASE_RESOLVED",
+        "title": f"Case Resolved: {case_doc['title']} ({final_status})",
+        "description": f"Closed with notes: {resolve_in.closing_notes[:100]}",
+        "timestamp": now,
+        "actor": officer_name,
+        "metadata": {
+            "case_id": case_id,
+            "status": final_status,
+            "closing_notes": resolve_in.closing_notes,
+            "legal_remarks": resolve_in.legal_remarks,
+            "resolved_by": officer_name
+        }
+    }
+    await db.parcel_events.insert_one(event_dict)
 
     updated_case = await db.cases.find_one({"case_id": case_id})
     return updated_case

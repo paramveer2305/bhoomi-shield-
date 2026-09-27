@@ -6,16 +6,17 @@ interface GetAlertsParams {
   limit?: number;
   severity?: string;
   status?: string;
+  parcel_id?: string;
 }
 
 export const alerts = {
   getAlerts: async (params?: GetAlertsParams): Promise<Alert[]> => {
-    const response = await apiClient.get<Alert[]>('/alerts/', { params });
+    const response = await apiClient.get<Alert[]>('/alerts', { params });
     return response.data;
   },
 
   createAlert: async (data: Omit<Alert, 'alert_id' | 'created_at' | 'updated_at'>): Promise<Alert> => {
-    const response = await apiClient.post<Alert>('/alerts/', data);
+    const response = await apiClient.post<Alert>('/alerts', data);
     return response.data;
   },
 
