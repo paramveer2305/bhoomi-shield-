@@ -58,6 +58,16 @@ const extractErrorMessage = (error: any): string => {
   if (error.response?.data) {
     const data = error.response.data;
 
+    // Backend returns `error: { message, code, path }` or `error: string`
+    if (data.error) {
+      if (typeof data.error === 'string') {
+        return data.error;
+      }
+      if (typeof data.error.message === 'string') {
+        return data.error.message;
+      }
+    }
+
     // FastAPI returns `detail`
     if (data.detail) {
       if (typeof data.detail === 'string') {
