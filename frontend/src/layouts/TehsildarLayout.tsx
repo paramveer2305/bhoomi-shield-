@@ -38,6 +38,12 @@ const TehsildarLayout: React.FC = () => {
 
   const navigation = [
     {
+      name: 'Executive Dashboard',
+      href: '/tehsildar/dashboard',
+      icon: LayoutDashboard,
+      description: 'Overview, analytics & quick actions'
+    },
+    {
       name: 'Executive Case Panel',
       href: '/tehsildar/cases',
       icon: Gavel,

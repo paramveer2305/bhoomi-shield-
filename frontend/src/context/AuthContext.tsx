@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { auth } from '../api/auth';
-import type { User, LoginCredentials, RegisterData, ApiError } from '../types';
+import type { User, LoginCredentials, RegisterData } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -34,7 +34,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const userData = await auth.getMe();
           if (isMounted) setUser(userData);
-        } catch (_error) {
+        } catch {
           localStorage.removeItem('access_token');
         }
       }
@@ -56,18 +56,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('access_token', tokenData.access_token);
       const userData = await auth.getMe();
       setUser(userData);
-    } catch (error) {
-      const apiError = error as ApiError;
-      throw new Error(apiError.error.message);
+    } catch (error: any) {
+      const message =
+        error?.message ||
+        error?.error?.message ||
+        (typeof error === 'string' ? error : 'Authentication failed. Please check your credentials.');
+      throw new Error(message);
     }
   };
 
   const register = async (data: RegisterData) => {
     try {
       await auth.register(data);
-    } catch (error) {
-      const apiError = error as ApiError;
-      throw new Error(apiError.error.message);
+    } catch (error: any) {
+      const message =
+        error?.message ||
+        error?.error?.message ||
+        (typeof error === 'string' ? error : 'Registration failed. Please check your details.');
+      throw new Error(message);
     }
   };
 

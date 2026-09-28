@@ -36,6 +36,12 @@ const PatwariLayout: React.FC = () => {
 
   const navigation = [
     {
+      name: 'Dashboard Overview',
+      href: '/patwari/dashboard',
+      icon: LayoutDashboard,
+      description: 'Cadastral stats and quick actions'
+    },
+    {
       name: 'Field Inspections',
       href: '/patwari/inspections',
       icon: ClipboardCheck,

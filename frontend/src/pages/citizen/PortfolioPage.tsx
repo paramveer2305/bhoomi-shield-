@@ -1,24 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../components/ui';
+import { useNavigate } from 'react-router-dom';
+import { Card } from '../../components/ui';
 import { Badge, getStatusBadgeVariant, getRiskBadgeVariant } from '../../components/ui';
 import { Button } from '../../components/ui';
 import { DataGrid } from '../../components/ui';
 import type { Column } from '../../components/ui';
-import { Search, Filter, MapPin, FileText, AlertTriangle, Shield, ChevronRight, Eye, Download, Map } from 'lucide-react';
+import { Search, MapPin, FileText, Shield, ChevronRight, Eye, Download, Map } from 'lucide-react';
 import { parcels } from '../../api/parcels';
+import { generateParcelPDFReport } from '../../utils/pdfGenerator';
 import type { Parcel } from '../../types';
 
 const PortfolioPage: React.FC = () => {
+  const navigate = useNavigate();
   const [parcelsData, setParcelsData] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [isExportingPortfolio, setIsExportingPortfolio] = useState(false);
 
   useEffect(() => {
     const fetchParcels = async () => {
       try {
-        // In real app, filter by current user's ownership
-        const data = await parcels.getParcels({ status: 'VERIFIED' });
+        setLoading(true);
+        const data = await parcels.getParcels({ limit: 100 });
         setParcelsData(data);
       } catch (error) {
         console.error('Failed to fetch parcels:', error);
@@ -29,10 +34,40 @@ const PortfolioPage: React.FC = () => {
     fetchParcels();
   }, []);
 
+  const handleExportReport = async (parcelId: string) => {
+    try {
+      setExportingId(parcelId);
+      const reportData = await parcels.exportReport(parcelId);
+      generateParcelPDFReport(reportData);
+    } catch (err: any) {
+      console.error('Failed to export parcel report:', err);
+      alert(err?.message || 'Failed to export parcel report. Please try again.');
+    } finally {
+      setExportingId(null);
+    }
+  };
+
+  const handleExportPortfolio = async () => {
+    if (parcelsData.length === 0) return;
+    setIsExportingPortfolio(true);
+    try {
+      for (const parcel of parcelsData) {
+        const reportData = await parcels.exportReport(parcel.parcel_id);
+        generateParcelPDFReport(reportData);
+      }
+    } catch (err: any) {
+      console.error('Failed to export portfolio report:', err);
+      alert(err?.message || 'Failed to export portfolio reports. Please try again.');
+    } finally {
+      setIsExportingPortfolio(false);
+    }
+  };
+
   const filteredParcels = parcelsData.filter(parcel =>
-    parcel.survey_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    parcel.district.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    parcel.village.toLowerCase().includes(searchTerm.toLowerCase())
+    parcel.survey_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    parcel.district?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    parcel.village?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    parcel.parcel_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const columns: Column<Parcel>[] = [
@@ -58,7 +93,7 @@ const PortfolioPage: React.FC = () => {
       width: '120px',
       accessor: (row) => (
         <Badge variant={getRiskBadgeVariant(row.risk_level || 'LOW')} size="sm" dot>
-          {row.risk_level}
+          {row.risk_level || 'LOW'}
         </Badge>
       ),
     },
@@ -68,13 +103,42 @@ const PortfolioPage: React.FC = () => {
       width: '120px',
       accessor: (row) => (
         <div className="flex items-center justify-center gap-1">
-          <Button variant="ghost" size="icon" onClick={() => setSelectedParcel(row)} aria-label="View details">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/parcels/${row.parcel_id}`);
+            }}
+            aria-label="View details"
+          >
             <Eye className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Download document">
-            <Download className="w-4 h-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Download document"
+            disabled={exportingId === row.parcel_id}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleExportReport(row.parcel_id);
+            }}
+          >
+            {exportingId === row.parcel_id ? (
+              <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
           </Button>
-          <Button variant="ghost" size="icon" aria-label="View on map">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="View on map"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/parcels/${row.parcel_id}?tab=overview`);
+            }}
+          >
             <Map className="w-4 h-4" />
           </Button>
         </div>
@@ -91,11 +155,20 @@ const PortfolioPage: React.FC = () => {
           <p className="text-secondary-600 mt-1">View and manage your land holdings</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2">
-            <Download className="w-4 h-4" />
+          <Button
+            variant="outline"
+            className="gap-2"
+            disabled={isExportingPortfolio || parcelsData.length === 0}
+            onClick={handleExportPortfolio}
+          >
+            {isExportingPortfolio ? (
+              <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
             Export Portfolio
           </Button>
-          <Button variant="primary" className="gap-2">
+          <Button variant="primary" className="gap-2" onClick={() => navigate('/citizen/search')}>
             <FileText className="w-4 h-4" />
             Add New Parcel
           </Button>
@@ -146,7 +219,7 @@ const PortfolioPage: React.FC = () => {
             <div>
               <p className="text-secondary-500 text-sm font-medium">Total Area</p>
               <p className="text-3xl font-bold text-foreground mt-1">
-                {parcelsData.reduce((sum, p) => sum + p.area, 0).toLocaleString()} sq m
+                {parcelsData.reduce((sum, p) => sum + (p.area || 0), 0).toLocaleString()} sq m
               </p>
             </div>
             <div className="w-12 h-12 bg-info-100 rounded-xl flex items-center justify-center">
@@ -170,11 +243,19 @@ const PortfolioPage: React.FC = () => {
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
-              <Filter className="w-4 h-4" />
-              Filters
-            </Button>
-            <Button variant="outline" className="gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                if (filteredParcels.length > 0) {
+                  navigate(`/parcels/${filteredParcels[0].parcel_id}?tab=overview`);
+                } else if (parcelsData.length > 0) {
+                  navigate(`/parcels/${parcelsData[0].parcel_id}?tab=overview`);
+                } else {
+                  navigate('/parcels');
+                }
+              }}
+            >
               <MapPin className="w-4 h-4" />
               Map View
             </Button>
@@ -226,7 +307,7 @@ const PortfolioPage: React.FC = () => {
                   <div>
                     <p className="text-secondary-500 text-sm font-medium">Risk Level</p>
                     <Badge variant={getRiskBadgeVariant(selectedParcel.risk_level || 'LOW')} size="md" dot>
-                      {selectedParcel.risk_level}
+                      {selectedParcel.risk_level || 'LOW'} Risk
                     </Badge>
                   </div>
                   <div>
@@ -235,7 +316,7 @@ const PortfolioPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-secondary-500 text-sm font-medium">Area</p>
-                    <p className="font-medium">{selectedParcel.area.toLocaleString()} sq m</p>
+                    <p className="font-medium">{selectedParcel.area?.toLocaleString()} sq m</p>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -246,18 +327,29 @@ const PortfolioPage: React.FC = () => {
                   <div>
                     <p className="text-secondary-500 text-sm font-medium">Coordinates</p>
                     <p className="font-medium text-sm font-mono">
-                      {selectedParcel.latitude?.toFixed(6)}, {selectedParcel.longitude?.toFixed(6)}
+                      {selectedParcel.latitude !== undefined && selectedParcel.longitude !== undefined
+                        ? `${selectedParcel.latitude.toFixed(6)}, ${selectedParcel.longitude.toFixed(6)}`
+                        : 'Not recorded'}
                     </p>
                   </div>
                   <div>
                     <p className="text-secondary-500 text-sm font-medium">Last Updated</p>
-                    <p className="font-medium">{new Date(selectedParcel.updated_at).toLocaleDateString()}</p>
+                    <p className="font-medium">
+                      {selectedParcel.updated_at ? new Date(selectedParcel.updated_at).toLocaleDateString() : 'N/A'}
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-border flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setSelectedParcel(null)}>Close</Button>
-                <Button variant="primary" onClick={() => setSelectedParcel(null)}>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    const id = selectedParcel.parcel_id;
+                    setSelectedParcel(null);
+                    navigate(`/parcels/${id}`);
+                  }}
+                >
                   <ChevronRight className="w-4 h-4" />
                   View Full Details
                 </Button>

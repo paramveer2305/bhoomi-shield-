@@ -1,54 +1,138 @@
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../components/ui';
+import { useNavigate } from 'react-router-dom';
+import { Card } from '../../components/ui';
 import { Badge, getStatusBadgeVariant, getRiskBadgeVariant } from '../../components/ui';
 import { Button } from '../../components/ui';
-import { Input } from '../../components/ui';
-import { Search, MapPin, FileText, AlertTriangle, Shield, Map, ChevronRight, Download, Eye, RefreshCw } from 'lucide-react';
+import { Search, MapPin, Map, ChevronRight, Download, Eye, RefreshCw, AlertCircle } from 'lucide-react';
+import { parcels } from '../../api/parcels';
+import { generateParcelPDFReport } from '../../utils/pdfGenerator';
+import type { Parcel } from '../../types';
 
 const SearchPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [district, setDistrict] = useState('');
+  const [tehsil, setTehsil] = useState('');
+  const [village, setVillage] = useState('');
+  const [landType, setLandType] = useState('');
+  const [searchResults, setSearchResults] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedParcel, setSelectedParcel] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'search' | 'recent'>('search');
+  const [hasSearched, setHasSearched] = useState(false);
+  const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  const executeSearch = async (overrides?: {
+    query?: string;
+    district?: string;
+    tehsil?: string;
+    village?: string;
+    landType?: string;
+  }) => {
+    const q = overrides?.query !== undefined ? overrides.query : searchQuery;
+    const dist = overrides?.district !== undefined ? overrides.district : district;
+    const teh = overrides?.tehsil !== undefined ? overrides.tehsil : tehsil;
+    const vil = overrides?.village !== undefined ? overrides.village : village;
+    const lType = overrides?.landType !== undefined ? overrides.landType : landType;
+
+    const trimmedQ = q.trim();
+    if (!trimmedQ && !dist && !teh && !vil && !lType) {
+      return;
+    }
+
     setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    // Mock results
-    setSearchResults([
-      {
-        parcel_id: 'MP-BPL-1024',
-        survey_number: '124/2',
-        district: 'Bhopal',
-        tehsil: 'Huzur',
-        village: 'Barkheda',
-        owner_name: 'Ramesh Sharma',
-        area: 2400,
-        land_type: 'Agricultural',
-        status: 'VERIFIED',
-        risk_level: 'LOW',
-        latitude: 23.2599,
-        longitude: 77.4126,
-      },
-      {
-        parcel_id: 'MP-IND-2048',
-        survey_number: '567/1A',
-        district: 'Indore',
-        tehsil: 'Indore',
-        village: 'Rau',
-        owner_name: 'Priya Patel',
-        area: 1800,
-        land_type: 'Residential',
-        status: 'REQUIRES_VERIFICATION',
-        risk_level: 'MEDIUM',
-        latitude: 22.7196,
-        longitude: 75.8577,
-      },
-    ]);
-    setLoading(false);
+    setSearchError(null);
+    setHasSearched(true);
+
+    try {
+      // Query real parcels API with district, tehsil, and village filters
+      const data = await parcels.getParcels({
+        district: dist || undefined,
+        tehsil: teh || undefined,
+        village: vil || undefined,
+        limit: 100,
+      });
+
+      let filtered = data;
+
+      // Filter by survey number, parcel ID, or owner name if query entered
+      if (trimmedQ) {
+        const lowerQ = trimmedQ.toLowerCase();
+        filtered = filtered.filter(
+          (p) =>
+            p.survey_number?.toLowerCase().includes(lowerQ) ||
+            p.parcel_id?.toLowerCase().includes(lowerQ) ||
+            p.owner_name?.toLowerCase().includes(lowerQ) ||
+            p.village?.toLowerCase().includes(lowerQ)
+        );
+
+        // If no match found in search results and no location filters applied, try direct parcel ID lookup
+        if (filtered.length === 0 && !dist && !teh && !vil) {
+          try {
+            const single = await parcels.getParcel(trimmedQ);
+            if (single && single.parcel_id) {
+              filtered = [single];
+            }
+          } catch {
+            // Not a direct parcel ID match, keep empty filtered array
+          }
+        }
+      }
+
+      // Filter by land type if selected
+      if (lType) {
+        filtered = filtered.filter(
+          (p) => p.land_type?.toLowerCase() === lType.toLowerCase()
+        );
+      }
+
+      setSearchResults(filtered);
+    } catch (err: any) {
+      console.error('Search failed:', err);
+      setSearchError(err?.message || 'Failed to search land records. Please verify server connection.');
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClear = () => {
+    setSearchQuery('');
+    setDistrict('');
+    setTehsil('');
+    setVillage('');
+    setLandType('');
+    setSearchResults([]);
+    setHasSearched(false);
+    setSearchError(null);
+  };
+
+  const handlePopularSearch = (popularDistrict: string, popularLandType: string) => {
+    setSearchQuery('');
+    setDistrict(popularDistrict);
+    setTehsil('');
+    setVillage('');
+    setLandType(popularLandType);
+    executeSearch({
+      query: '',
+      district: popularDistrict,
+      tehsil: '',
+      village: '',
+      landType: popularLandType,
+    });
+  };
+
+  const handleDownloadReport = async (parcelId: string) => {
+    try {
+      setExportingId(parcelId);
+      const reportData = await parcels.exportReport(parcelId);
+      generateParcelPDFReport(reportData);
+    } catch (err: any) {
+      console.error('Failed to download report:', err);
+      alert(err?.message || 'Failed to generate report for parcel. Please try again.');
+    } finally {
+      setExportingId(null);
+    }
   };
 
   return (
@@ -72,21 +156,25 @@ const SearchPage: React.FC = () => {
                   placeholder="e.g., 124/2, 567/1A, MP-BPL-1024"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={(e) => e.key === 'Enter' && executeSearch()}
                   className="input pl-10 pr-4 text-lg"
                 />
               </div>
-              <Button variant="primary" size="lg" onClick={handleSearch} loading={loading} className="gap-2">
+              <Button variant="primary" size="lg" onClick={() => executeSearch()} loading={loading} className="gap-2">
                 <Search className="w-5 h-5" />
                 Search
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="label">District</label>
-              <select className="select">
+              <select
+                className="select"
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+              >
                 <option value="">All Districts</option>
                 <option value="Bhopal">Bhopal</option>
                 <option value="Indore">Indore</option>
@@ -96,7 +184,11 @@ const SearchPage: React.FC = () => {
             </div>
             <div>
               <label className="label">Tehsil</label>
-              <select className="select">
+              <select
+                className="select"
+                value={tehsil}
+                onChange={(e) => setTehsil(e.target.value)}
+              >
                 <option value="">All Tehsils</option>
                 <option value="Huzur">Huzur</option>
                 <option value="Indore">Indore</option>
@@ -104,8 +196,23 @@ const SearchPage: React.FC = () => {
               </select>
             </div>
             <div>
+              <label className="label">Village</label>
+              <input
+                type="text"
+                placeholder="Village name (e.g. Barkheda)"
+                value={village}
+                onChange={(e) => setVillage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && executeSearch()}
+                className="input"
+              />
+            </div>
+            <div>
               <label className="label">Land Type</label>
-              <select className="select">
+              <select
+                className="select"
+                value={landType}
+                onChange={(e) => setLandType(e.target.value)}
+              >
                 <option value="">All Types</option>
                 <option value="Agricultural">Agricultural</option>
                 <option value="Residential">Residential</option>
@@ -116,13 +223,9 @@ const SearchPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4 pt-4 border-t border-border">
-            <Button variant="outline" className="gap-2" onClick={() => setSearchQuery('')}>
+            <Button variant="outline" className="gap-2" onClick={handleClear}>
               <RefreshCw className="w-4 h-4" />
               Clear
-            </Button>
-            <Button variant="outline" className="gap-2">
-              <MapPin className="w-4 h-4" />
-              Advanced Search
             </Button>
             <span className="text-sm text-secondary-500 ml-auto">
               Search is public. No login required for basic lookup.
@@ -132,7 +235,7 @@ const SearchPage: React.FC = () => {
       </Card>
 
       {/* Results */}
-      {searchQuery && (
+      {hasSearched && (
         <Card variant="default" padding="none">
           <div className="p-6 border-b border-border">
             <div className="flex items-center justify-between">
@@ -146,6 +249,12 @@ const SearchPage: React.FC = () => {
             <div className="p-12 text-center">
               <div className="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
               <p className="text-secondary-600">Searching records...</p>
+            </div>
+          ) : searchError ? (
+            <div className="p-12 text-center">
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-foreground mb-2">Search Failed</h3>
+              <p className="text-secondary-500 text-sm max-w-md mx-auto">{searchError}</p>
             </div>
           ) : searchResults.length === 0 ? (
             <div className="p-12 text-center">
@@ -164,26 +273,46 @@ const SearchPage: React.FC = () => {
                         <Badge variant={getStatusBadgeVariant(parcel.status)} size="sm">
                           {parcel.status.replace('_', ' ')}
                         </Badge>
-                        <Badge variant={getRiskBadgeVariant(parcel.risk_level)} size="sm" dot>
-                          {parcel.risk_level} Risk
+                        <Badge variant={getRiskBadgeVariant(parcel.risk_level || 'LOW')} size="sm" dot>
+                          {parcel.risk_level || 'LOW'} Risk
                         </Badge>
                       </div>
                       <p className="text-secondary-500 text-sm mt-1">
-                        {parcel.village}, {parcel.tehsil}, {parcel.district} • {parcel.area.toLocaleString()} sq m
+                        {parcel.village}, {parcel.tehsil}, {parcel.district} • {parcel.area?.toLocaleString() ?? 0} sq m
                       </p>
                       <p className="text-secondary-500 text-sm">
                         Owner: {parcel.owner_name} • {parcel.land_type}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => setSelectedParcel(parcel)} aria-label="View details">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedParcel(parcel)}
+                        aria-label="View details"
+                      >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" aria-label="View on map">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="View on map"
+                        onClick={() => navigate(`/parcels/${parcel.parcel_id}?tab=overview`)}
+                      >
                         <Map className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-1 hidden sm:inline-flex">
-                        <Download className="w-3.5 h-3.5" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 hidden sm:inline-flex"
+                        disabled={exportingId === parcel.parcel_id}
+                        onClick={() => handleDownloadReport(parcel.parcel_id)}
+                      >
+                        {exportingId === parcel.parcel_id ? (
+                          <div className="w-3.5 h-3.5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5" />
+                        )}
                         Report
                       </Button>
                     </div>
@@ -199,20 +328,19 @@ const SearchPage: React.FC = () => {
       <Card variant="outlined" padding="md">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold">Popular Searches</h3>
-          <Button variant="ghost" size="sm">View All</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: 'Bhopal - Agricultural', query: 'Bhopal Agricultural' },
-            { label: 'Indore - Residential', query: 'Indore Residential' },
-            { label: 'Jabalpur - Commercial', query: 'Jabalpur Commercial' },
-            { label: 'Gwalior - Industrial', query: 'Gwalior Industrial' },
+            { label: 'Bhopal - Agricultural', district: 'Bhopal', landType: 'Agricultural' },
+            { label: 'Indore - Residential', district: 'Indore', landType: 'Residential' },
+            { label: 'Jabalpur - Commercial', district: 'Jabalpur', landType: 'Commercial' },
+            { label: 'Gwalior - Industrial', district: 'Gwalior', landType: 'Industrial' },
           ].map((item) => (
             <Button
-              key={item.query}
+              key={item.label}
               variant="outline"
               className="justify-start h-auto py-3"
-              onClick={() => { setSearchQuery(item.query); handleSearch(); }}
+              onClick={() => handlePopularSearch(item.district, item.landType)}
             >
               <MapPin className="w-4 h-4" />
               <span className="text-left">{item.label}</span>
@@ -247,8 +375,8 @@ const SearchPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-secondary-500 text-sm font-medium">Risk Level</p>
-                    <Badge variant={getRiskBadgeVariant(selectedParcel.risk_level)} size="md" dot>
-                      {selectedParcel.risk_level} Risk
+                    <Badge variant={getRiskBadgeVariant(selectedParcel.risk_level || 'LOW')} size="md" dot>
+                      {selectedParcel.risk_level || 'LOW'} Risk
                     </Badge>
                   </div>
                   <div>
@@ -257,7 +385,7 @@ const SearchPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-secondary-500 text-sm font-medium">Area</p>
-                    <p className="font-medium">{selectedParcel.area.toLocaleString()} sq m</p>
+                    <p className="font-medium">{selectedParcel.area?.toLocaleString() ?? 'N/A'} sq m</p>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -272,14 +400,23 @@ const SearchPage: React.FC = () => {
                   <div>
                     <p className="text-secondary-500 text-sm font-medium">Coordinates</p>
                     <p className="font-medium text-sm font-mono">
-                      {selectedParcel.latitude?.toFixed(6)}, {selectedParcel.longitude?.toFixed(6)}
+                      {selectedParcel.latitude !== undefined && selectedParcel.longitude !== undefined
+                        ? `${selectedParcel.latitude.toFixed(6)}, ${selectedParcel.longitude.toFixed(6)}`
+                        : 'Not recorded'}
                     </p>
                   </div>
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-border flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setSelectedParcel(null)}>Close</Button>
-                <Button variant="primary" onClick={() => setSelectedParcel(null)}>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    const id = selectedParcel.parcel_id;
+                    setSelectedParcel(null);
+                    navigate(`/parcels/${id}`);
+                  }}
+                >
                   <ChevronRight className="w-4 h-4" />
                   View Full Report
                 </Button>

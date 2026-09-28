@@ -1,12 +1,14 @@
 import React from 'react';
+import AlertsPage from '../alerts/AlertsPage';
 
-const AlertsPage: React.FC = () => {
+const PatwariAlertsPage: React.FC = () => {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Patwari - Alerts</h1>
-      <p className="text-secondary-600">Alerts page - Coming soon</p>
-    </div>
+    <AlertsPage
+      title="Patwari Field Alerts & Risk Signals"
+      subtitle="Early warning signals, encroachment notices, and field boundary alerts in your jurisdiction"
+      role="patwari"
+    />
   );
 };
 
-export default AlertsPage;
+export default PatwariAlertsPage;

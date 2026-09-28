@@ -12,14 +12,12 @@ export const documents = {
   },
 
   registerDocumentJson: async (data: any): Promise<Document> => {
-    const response = await apiClient.post<Document>('/documents/register', data);
+    const response = await apiClient.post<Document>('/documents/register-json', data);
     return response.data;
   },
 
   getDocuments: async (parcelId: string): Promise<Document[]> => {
-    const response = await apiClient.get<Document[]>(`/documents/`, {
-      params: { parcel_id: parcelId },
-    });
+    const response = await apiClient.get<Document[]>(`/documents/${parcelId}`);
     return response.data;
   },
 };

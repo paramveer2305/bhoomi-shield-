@@ -1,12 +1,13 @@
 import React from 'react';
+import CasesPage from '../cases/CasesPage';
 
-const CasesPage: React.FC = () => {
+const TehsildarCasesPage: React.FC = () => {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Tehsildar - Cases</h1>
-      <p className="text-secondary-600">Cases page - Coming soon</p>
-    </div>
+    <CasesPage
+      title="Tehsildar Executive Case Management"
+      subtitle="Review, manage, and adjudicate land disputes and verification proceedings"
+    />
   );
 };
 
-export default CasesPage;
+export default TehsildarCasesPage;
