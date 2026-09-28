@@ -41,8 +41,8 @@ const getStatusBadgeClass = (status: string): string => {
   }
 };
 
-const formatArea = (area: number): string => {
-  return `${area.toLocaleString()} sq m`;
+const formatArea = (area?: number): string => {
+  return `${area?.toLocaleString() ?? 0} sq m`;
 };
 
 const ParcelDetailPage: React.FC = () => {
@@ -88,6 +88,12 @@ const ParcelDetailPage: React.FC = () => {
     const tab = searchParams.get('tab');
     if (tab === 'cases') {
       setActiveTab('cases');
+    } else if (tab === 'risk') {
+      setActiveTab('risk');
+    } else if (tab === 'documents') {
+      setActiveTab('documents');
+    } else if (tab === 'overview') {
+      setActiveTab('overview');
     }
   }, [searchParams]);
 

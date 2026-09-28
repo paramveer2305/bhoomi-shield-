@@ -6,12 +6,14 @@ interface GetParcelsParams {
   limit?: number;
   status?: string;
   district?: string;
+  tehsil?: string;
+  village?: string;
   owner_name?: string;
 }
 
 export const parcels = {
   getParcels: async (params?: GetParcelsParams): Promise<Parcel[]> => {
-    const response = await apiClient.get<Parcel[]>('/parcels/', { params });
+    const response = await apiClient.get<Parcel[]>('/parcels', { params });
     return response.data;
   },
 
@@ -21,7 +23,7 @@ export const parcels = {
   },
 
   createParcel: async (data: Omit<Parcel, 'parcel_id' | 'created_at' | 'updated_at'>): Promise<Parcel> => {
-    const response = await apiClient.post<Parcel>('/parcels/', data);
+    const response = await apiClient.post<Parcel>('/parcels', data);
     return response.data;
   },
 

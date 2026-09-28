@@ -27,13 +27,13 @@ const ROLE_ROUTES: RoleRouteConfig[] = [
     layout: PatwariLayout,
     basePath: '/patwari',
     allowedRoles: ['patwari', 'officer'],
-    redirectPath: '/patwari/inspections',
+    redirectPath: '/patwari/dashboard',
   },
   {
     layout: TehsildarLayout,
     basePath: '/tehsildar',
     allowedRoles: ['tehsildar', 'officer'],
-    redirectPath: '/tehsildar/cases',
+    redirectPath: '/tehsildar/dashboard',
   },
   {
     layout: AdminLayout,
@@ -63,10 +63,16 @@ export const isPathAllowedForRole = (pathname: string, role: UserRole): boolean 
   // Allow access to any allowed basePath for this role
   if (allowedConfigs.some(config => pathname.startsWith(config.basePath))) return true;
 
-  // Allow legacy paths for officer or admin
-  if ((role === 'officer' || role === 'admin') && (pathname.startsWith('/parcels') || pathname.startsWith('/cases') || pathname.startsWith('/alerts'))) {
+  // Allow parcel routes for all authenticated roles inside their respective layout
+  if (pathname.startsWith('/parcels')) return true;
+
+  // Allow cases for officers, patwari, tehsildar, admin
+  if (pathname.startsWith('/cases') && ['patwari', 'tehsildar', 'officer', 'admin'].includes(role)) {
     return true;
   }
+
+  // Allow alerts for all authenticated roles
+  if (pathname.startsWith('/alerts')) return true;
 
   // Allow access to public/auth paths
   if (pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/unauthorized')) {

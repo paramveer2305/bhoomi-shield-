@@ -7,6 +7,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
 // Role-specific page imports (lazy loaded)
+const DashboardHome = React.lazy(() => import('./pages/DashboardHome'));
 const CitizenPortfolio = React.lazy(() => import('./pages/citizen/PortfolioPage'));
 const CitizenSearch = React.lazy(() => import('./pages/citizen/SearchPage'));
 const CitizenDocuments = React.lazy(() => import('./pages/citizen/DocumentsPage'));
@@ -134,12 +135,15 @@ function App() {
                   }
                 >
                   {/* Citizen Routes */}
+                  <Route path="/citizen" element={<Navigate to="/citizen/portfolio" replace />} />
                   <Route path="/citizen/portfolio" element={<CitizenPortfolio />} />
                   <Route path="/citizen/search" element={<CitizenSearch />} />
                   <Route path="/citizen/documents" element={<CitizenDocuments />} />
                   <Route path="/citizen/alerts" element={<CitizenAlerts />} />
 
                   {/* Patwari Routes */}
+                  <Route path="/patwari" element={<Navigate to="/patwari/dashboard" replace />} />
+                  <Route path="/patwari/dashboard" element={<DashboardHome />} />
                   <Route path="/patwari/inspections" element={<PatwariInspections />} />
                   <Route path="/patwari/surveys" element={<PatwariSurveys />} />
                   <Route path="/patwari/evidence" element={<PatwariEvidence />} />
@@ -148,6 +152,8 @@ function App() {
                   <Route path="/patwari/alerts" element={<PatwariAlerts />} />
 
                   {/* Tehsildar Routes */}
+                  <Route path="/tehsildar" element={<Navigate to="/tehsildar/dashboard" replace />} />
+                  <Route path="/tehsildar/dashboard" element={<DashboardHome />} />
                   <Route path="/tehsildar/cases" element={<TehsildarCases />} />
                   <Route path="/tehsildar/resolution" element={<TehsildarResolution />} />
                   <Route path="/tehsildar/mutations" element={<TehsildarMutations />} />
@@ -156,6 +162,7 @@ function App() {
                   <Route path="/tehsildar/alerts" element={<TehsildarAlerts />} />
 
                   {/* Admin Routes */}
+                  <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
                   <Route path="/admin/overview" element={<AdminOverview />} />
                   <Route path="/admin/ai-config" element={<AdminAIConfig />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
@@ -165,13 +172,13 @@ function App() {
                   <Route path="/admin/integrations" element={<AdminIntegrations />} />
                   <Route path="/admin/settings" element={<AdminSettings />} />
                   <Route path="/admin/personnel" element={<AdminPersonnel />} />
-                </Route>
 
-                {/* Legacy Routes */}
-                <Route path="/parcels" element={<ParcelListPage />} />
-                <Route path="/parcels/:parcel_id" element={<ParcelDetailPage />} />
-                <Route path="/cases" element={<LegacyCasesPage />} />
-                <Route path="/alerts" element={<LegacyAlertsPage />} />
+                  {/* Shared Cadastral, Case, and Alert Routes inside Layout */}
+                  <Route path="/parcels" element={<ParcelListPage />} />
+                  <Route path="/parcels/:parcel_id" element={<ParcelDetailPage />} />
+                  <Route path="/cases" element={<LegacyCasesPage />} />
+                  <Route path="/alerts" element={<LegacyAlertsPage />} />
+                </Route>
 
                 {/* Root redirect based on role */}
                 <Route

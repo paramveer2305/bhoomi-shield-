@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { alerts } from '../../api/alerts';
 import type { Alert } from '../../types';
 import {
@@ -8,7 +9,17 @@ import {
   Filter,
   ShieldAlert,
   X,
+  Search,
+  RefreshCw,
+  AlertCircle,
+  ExternalLink,
 } from 'lucide-react';
+
+export interface AlertsPageProps {
+  title?: string;
+  subtitle?: string;
+  role?: 'patwari' | 'tehsildar' | 'officer' | 'admin';
+}
 
 const severityOptions = [
   { value: '', label: 'All Severities' },
@@ -84,15 +95,13 @@ const AlertCard: React.FC<{
   onStatusChange: (alertId: string, status: Alert['status']) => void;
   isUpdating: boolean;
 }> = ({ alert, onStatusChange, isUpdating }) => {
-  const [showActions, setShowActions] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div
       className={`rounded-xl border-2 p-6 transition-all hover:shadow-lg ${getSeverityClass(alert.severity)}`}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-3">
             {getSeverityIcon(alert.severity)}
@@ -124,42 +133,63 @@ const AlertCard: React.FC<{
               <Clock className="w-3.5 h-3.5" />
               {formatDate(alert.created_at)}
             </span>
-            <span className="flex items-center gap-1 font-mono bg-gray-100 px-2 py-0.5 rounded">
-              {alert.parcel_id}
-            </span>
+            <button
+              type="button"
+              onClick={() => navigate(`/parcels/${alert.parcel_id}`)}
+              className="flex items-center gap-1 font-mono bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 px-2 py-0.5 rounded text-xs transition-colors cursor-pointer"
+              title="View Parcel Details"
+            >
+              <span>{alert.parcel_id}</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
           </div>
         </div>
 
         {/* Action Buttons */}
-        {showActions && alert.status !== 'RESOLVED' && (
-          <div className="flex flex-col gap-2 flex-shrink-0">
+        {alert.status !== 'RESOLVED' && (
+          <div className="flex flex-wrap sm:flex-col gap-2 flex-shrink-0 self-end sm:self-start">
             {alert.status === 'ACTIVE' && (
               <button
+                type="button"
                 onClick={() => onStatusChange(alert.alert_id, 'ACKNOWLEDGED')}
                 disabled={isUpdating}
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
               >
-                <CheckCircle className="w-3.5 h-3.5" />
+                {isUpdating ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle className="w-3.5 h-3.5" />
+                )}
                 Acknowledge
               </button>
             )}
             {alert.status === 'ACKNOWLEDGED' && (
               <button
+                type="button"
                 onClick={() => onStatusChange(alert.alert_id, 'RESOLVED')}
                 disabled={isUpdating}
-                className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
               >
-                <CheckCircle className="w-3.5 h-3.5" />
+                {isUpdating ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle className="w-3.5 h-3.5" />
+                )}
                 Mark Resolved
               </button>
             )}
             {alert.status === 'ACTIVE' && (
               <button
+                type="button"
                 onClick={() => onStatusChange(alert.alert_id, 'RESOLVED')}
                 disabled={isUpdating}
-                className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
               >
-                <X className="w-3.5 h-3.5" />
+                {isUpdating ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <X className="w-3.5 h-3.5" />
+                )}
                 Dismiss
               </button>
             )}
@@ -170,28 +200,30 @@ const AlertCard: React.FC<{
   );
 };
 
-const AlertsPage: React.FC = () => {
+const AlertsPage: React.FC<AlertsPageProps> = ({ title, subtitle }) => {
   const [alertsData, setAlertsData] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successFeedback, setSuccessFeedback] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     severity: '',
     status: '',
   });
+  const [searchQuery, setSearchQuery] = useState('');
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
 
   const fetchAlerts = useCallback(async () => {
     setIsLoading(true);
     setError('');
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, string> = { limit: '100' };
       if (filters.severity) params.severity = filters.severity;
       if (filters.status) params.status = filters.status;
 
       const data = await alerts.getAlerts(params);
       setAlertsData(data);
-    } catch (err) {
-      setError('Failed to load alerts. Please try again.');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load alerts. Please try again.');
       console.error('Error fetching alerts:', err);
     } finally {
       setIsLoading(false);
@@ -199,17 +231,20 @@ const AlertsPage: React.FC = () => {
   }, [filters]);
 
   const handleStatusChange = async (alertId: string, status: Alert['status']) => {
+    if (updatingIds.has(alertId)) return;
     setUpdatingIds((prev) => new Set(prev).add(alertId));
     try {
       await alerts.updateAlert(alertId, { status });
       setAlertsData((prev) =>
         prev.map((alert) =>
-          alert.alert_id === alertId ? { ...alert, status } : alert
+          alert.alert_id === alertId ? { ...alert, status, updated_at: new Date().toISOString() } : alert
         )
       );
-    } catch (err) {
+      setSuccessFeedback(`Alert ${alertId} status updated to ${status.replace('_', ' ')}.`);
+      setTimeout(() => setSuccessFeedback(null), 3000);
+    } catch (err: any) {
       console.error('Error updating alert:', err);
-      setError('Failed to update alert status. Please try again.');
+      setError(err?.message || 'Failed to update alert status. Please try again.');
     } finally {
       setUpdatingIds((prev) => {
         const next = new Set(prev);
@@ -223,67 +258,45 @@ const AlertsPage: React.FC = () => {
     fetchAlerts();
   }, [fetchAlerts]);
 
-  if (isLoading) {
+  // Client-side search filtering by parcel_id, title, or message
+  const filteredAlerts = alertsData.filter((alert) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Alerts Dashboard</h1>
-            <p className="text-gray-600 mt-1">Monitor system-wide risk signals and early warnings</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="animate-pulse bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-lg" />
-                <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      alert.parcel_id?.toLowerCase().includes(q) ||
+      alert.title?.toLowerCase().includes(q) ||
+      alert.message?.toLowerCase().includes(q) ||
+      alert.alert_id?.toLowerCase().includes(q)
     );
-  }
+  });
 
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Alerts Dashboard</h1>
-            <p className="text-gray-600 mt-1">Monitor system-wide risk signals and early warnings</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={fetchAlerts}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Summary counts
+  // Summary counts from loaded dataset
   const activeCount = alertsData.filter((a) => a.status === 'ACTIVE').length;
   const acknowledgedCount = alertsData.filter((a) => a.status === 'ACKNOWLEDGED').length;
   const resolvedCount = alertsData.filter((a) => a.status === 'RESOLVED').length;
   const criticalCount = alertsData.filter((a) => a.severity === 'CRITICAL').length;
+
+  const pageTitle = title || 'Alerts Dashboard';
+  const pageSubtitle = subtitle || 'Monitor system-wide risk signals and early warnings';
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Alerts Dashboard</h1>
-          <p className="text-gray-600 mt-1">Monitor system-wide risk signals and early warnings</p>
+          <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+          <p className="text-gray-600 mt-1">{pageSubtitle}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={fetchAlerts}
+            disabled={isLoading}
+            className="px-3.5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -335,18 +348,53 @@ const AlertsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
+      {/* Action / Success Feedback */}
+      {successFeedback && (
+        <div className="p-3.5 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm flex items-center gap-2 animate-in">
+          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <span>{successFeedback}</span>
+        </div>
+      )}
+
+      {/* Error Banner with Retry */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <span className="font-medium text-gray-700">Filters:</span>
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <span>{error}</span>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={fetchAlerts}
+            className="text-xs font-semibold underline hover:no-underline ml-4 cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Filters & Search */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search by parcel ID, title, or keyword..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-gray-400" />
+              <span className="text-sm font-medium text-gray-700">Filters:</span>
+            </div>
             <select
               value={filters.severity}
               onChange={(e) => setFilters((prev) => ({ ...prev, severity: e.target.value }))}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
             >
               {severityOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -357,7 +405,7 @@ const AlertsPage: React.FC = () => {
             <select
               value={filters.status}
               onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
             >
               {statusOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -365,27 +413,51 @@ const AlertsPage: React.FC = () => {
                 </option>
               ))}
             </select>
-            <button
-              onClick={() => setFilters({ severity: '', status: '' })}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Clear
-            </button>
+            {(filters.severity || filters.status || searchQuery) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilters({ severity: '', status: '' });
+                  setSearchQuery('');
+                }}
+                className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                Reset
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Alerts List */}
       <div className="space-y-4">
-        {alertsData.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="animate-pulse bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredAlerts.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-200">
             <AlertTriangle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">No alerts found</h2>
-            <p className="text-gray-600">No risk signals match your current filters.</p>
+            <p className="text-gray-600">
+              {searchQuery || filters.severity || filters.status
+                ? 'No risk signals match your current search/filter criteria.'
+                : 'No alerts are currently active in the system.'}
+            </p>
           </div>
         ) : (
-          alertsData.map((alert) => (
+          filteredAlerts.map((alert) => (
             <AlertCard
               key={alert.alert_id}
               alert={alert}
