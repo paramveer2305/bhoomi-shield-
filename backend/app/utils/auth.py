@@ -67,12 +67,14 @@ async def get_optional_current_user(token: Optional[str] = Depends(oauth2_scheme
         db = get_database()
         user = await db.users.find_one({"username": username})
         if user:
+            raw_role = (user.get("role") or "citizen").lower()
+            norm_role = "officer" if raw_role in ["officer", "patwari", "tehsildar", "revenue_officer", "field_patwari", "admin", "system_admin"] else "citizen"
             return {
                 "id": str(user.get("_id")),
                 "username": user["username"],
                 "email": user["email"],
                 "full_name": user.get("full_name", user["username"]),
-                "role": user.get("role", "REVENUE_OFFICER")
+                "role": norm_role
             }
     except Exception:
         pass
@@ -80,10 +82,17 @@ async def get_optional_current_user(token: Optional[str] = Depends(oauth2_scheme
 
 def require_roles(roles: list[str]):
     async def role_checker(current_user: dict = Depends(get_current_user)):
-        if current_user["role"] not in roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Operation not permitted. Required roles: {roles}"
-            )
-        return current_user
+        user_role = (current_user.get("role") or "citizen").lower()
+        allowed = [r.lower() for r in roles]
+        officer_aliases = {"officer", "patwari", "tehsildar", "revenue_officer", "field_patwari", "admin", "system_admin"}
+        is_officer_allowed = any(r in officer_aliases for r in allowed)
+        is_citizen_allowed = "citizen" in allowed
+
+        if (user_role == "officer" and is_officer_allowed) or (user_role == "citizen" and is_citizen_allowed) or user_role in allowed:
+            return current_user
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Operation not permitted. Required roles: {roles}"
+        )
     return role_checker

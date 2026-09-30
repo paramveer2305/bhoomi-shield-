@@ -18,7 +18,7 @@ import {
 export interface AlertsPageProps {
   title?: string;
   subtitle?: string;
-  role?: 'patwari' | 'tehsildar' | 'officer' | 'admin';
+  role?: 'citizen' | 'officer' | string;
 }
 
 const severityOptions = [

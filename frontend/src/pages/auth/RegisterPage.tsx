@@ -154,11 +154,8 @@ const RegisterPage: React.FC = () => {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
               >
-                <option value="citizen">Citizen</option>
-                <option value="patwari">Patwari (Field Inspector)</option>
-                <option value="tehsildar">Tehsildar (Executive Officer)</option>
-                <option value="officer">Revenue Officer</option>
-                <option value="admin">Admin</option>
+                <option value="citizen">Citizen (Landowner / Buyer)</option>
+                <option value="officer">Officer (Revenue & Field Official)</option>
               </select>
             </div>
 

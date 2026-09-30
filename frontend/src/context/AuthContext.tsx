@@ -28,12 +28,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (isMounted) setIsLoading(false);
     }, 2500);
 
+    const normalizeUser = (data: any): User => {
+      const roleStr = (data?.role || 'citizen').toLowerCase();
+      const role: UserRole = ['officer', 'patwari', 'tehsildar', 'revenue_officer', 'field_patwari', 'admin'].includes(roleStr)
+        ? 'officer'
+        : 'citizen';
+      return { ...data, role };
+    };
+
     const initAuth = async () => {
       const token = localStorage.getItem('access_token');
       if (token) {
         try {
           const userData = await auth.getMe();
-          if (isMounted) setUser(userData);
+          if (isMounted) setUser(normalizeUser(userData));
         } catch {
           localStorage.removeItem('access_token');
         }
@@ -55,7 +63,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const tokenData = await auth.login(credentials);
       localStorage.setItem('access_token', tokenData.access_token);
       const userData = await auth.getMe();
-      setUser(userData);
+      const roleStr = (userData?.role || tokenData.role || 'citizen').toLowerCase();
+      const role: UserRole = ['officer', 'patwari', 'tehsildar', 'revenue_officer', 'field_patwari', 'admin'].includes(roleStr)
+        ? 'officer'
+        : 'citizen';
+      setUser({ ...userData, role });
     } catch (error: any) {
       const message =
         error?.message ||

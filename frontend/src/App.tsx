@@ -7,35 +7,25 @@ import RegisterPage from './pages/auth/RegisterPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
 // Role-specific page imports (lazy loaded)
-const DashboardHome = React.lazy(() => import('./pages/DashboardHome'));
+const OfficerDashboard = React.lazy(() => import('./pages/officer/OfficerDashboardPage'));
 const CitizenPortfolio = React.lazy(() => import('./pages/citizen/PortfolioPage'));
 const CitizenSearch = React.lazy(() => import('./pages/citizen/SearchPage'));
 const CitizenDocuments = React.lazy(() => import('./pages/citizen/DocumentsPage'));
 const CitizenAlerts = React.lazy(() => import('./pages/citizen/AlertsPage'));
 
-const PatwariInspections = React.lazy(() => import('./pages/patwari/InspectionsPage'));
-const PatwariSurveys = React.lazy(() => import('./pages/patwari/SurveysPage'));
-const PatwariEvidence = React.lazy(() => import('./pages/patwari/EvidencePage'));
-const PatwariVerification = React.lazy(() => import('./pages/patwari/VerificationPage'));
-const PatwariAssignments = React.lazy(() => import('./pages/patwari/AssignmentsPage'));
-const PatwariAlerts = React.lazy(() => import('./pages/patwari/AlertsPage'));
+// Unified Officer Capabilities (merged from field inspections and executive dispute adjudication)
+const OfficerInspections = React.lazy(() => import('./pages/patwari/InspectionsPage'));
+const OfficerSurveys = React.lazy(() => import('./pages/patwari/SurveysPage'));
+const OfficerEvidence = React.lazy(() => import('./pages/patwari/EvidencePage'));
+const OfficerVerification = React.lazy(() => import('./pages/patwari/VerificationPage'));
+const OfficerAssignments = React.lazy(() => import('./pages/patwari/AssignmentsPage'));
 
-const TehsildarCases = React.lazy(() => import('./pages/tehsildar/CasesPage'));
-const TehsildarResolution = React.lazy(() => import('./pages/tehsildar/ResolutionPage'));
-const TehsildarMutations = React.lazy(() => import('./pages/tehsildar/MutationsPage'));
-const TehsildarHistory = React.lazy(() => import('./pages/tehsildar/HistoryPage'));
-const TehsildarAnalytics = React.lazy(() => import('./pages/tehsildar/AnalyticsPage'));
-const TehsildarAlerts = React.lazy(() => import('./pages/tehsildar/AlertsPage'));
-
-const AdminOverview = React.lazy(() => import('./pages/admin/OverviewPage'));
-const AdminAIConfig = React.lazy(() => import('./pages/admin/RiskConfigurator'));
-const AdminUsers = React.lazy(() => import('./pages/admin/UsersPage'));
-const AdminLogs = React.lazy(() => import('./pages/admin/LogsPage'));
-const AdminDatabase = React.lazy(() => import('./pages/admin/DatabasePage'));
-const AdminSecurity = React.lazy(() => import('./pages/admin/SecurityPage'));
-const AdminIntegrations = React.lazy(() => import('./pages/admin/IntegrationsPage'));
-const AdminSettings = React.lazy(() => import('./pages/admin/SettingsPage'));
-const AdminPersonnel = React.lazy(() => import('./pages/admin/PersonnelManager'));
+const OfficerCases = React.lazy(() => import('./pages/tehsildar/CasesPage'));
+const OfficerResolution = React.lazy(() => import('./pages/tehsildar/ResolutionPage'));
+const OfficerMutations = React.lazy(() => import('./pages/tehsildar/MutationsPage'));
+const OfficerHistory = React.lazy(() => import('./pages/tehsildar/HistoryPage'));
+const OfficerAnalytics = React.lazy(() => import('./pages/tehsildar/AnalyticsPage'));
+const OfficerAlerts = React.lazy(() => import('./pages/tehsildar/AlertsPage'));
 
 // Legacy pages (for backward compatibility)
 import ParcelListPage from './pages/parcels/ParcelListPage';
@@ -141,42 +131,30 @@ function App() {
                   <Route path="/citizen/documents" element={<CitizenDocuments />} />
                   <Route path="/citizen/alerts" element={<CitizenAlerts />} />
 
-                  {/* Patwari Routes */}
-                  <Route path="/patwari" element={<Navigate to="/patwari/dashboard" replace />} />
-                  <Route path="/patwari/dashboard" element={<DashboardHome />} />
-                  <Route path="/patwari/inspections" element={<PatwariInspections />} />
-                  <Route path="/patwari/surveys" element={<PatwariSurveys />} />
-                  <Route path="/patwari/evidence" element={<PatwariEvidence />} />
-                  <Route path="/patwari/verification" element={<PatwariVerification />} />
-                  <Route path="/patwari/assignments" element={<PatwariAssignments />} />
-                  <Route path="/patwari/alerts" element={<PatwariAlerts />} />
+                  {/* Unified Officer Routes (Revenue & Field Enforcement) */}
+                  <Route path="/officer" element={<Navigate to="/officer/dashboard" replace />} />
+                  <Route path="/officer/dashboard" element={<OfficerDashboard />} />
+                  <Route path="/officer/cases" element={<OfficerCases />} />
+                  <Route path="/officer/resolution" element={<OfficerResolution />} />
+                  <Route path="/officer/mutations" element={<OfficerMutations />} />
+                  <Route path="/officer/inspections" element={<OfficerInspections />} />
+                  <Route path="/officer/surveys" element={<OfficerSurveys />} />
+                  <Route path="/officer/evidence" element={<OfficerEvidence />} />
+                  <Route path="/officer/verification" element={<OfficerVerification />} />
+                  <Route path="/officer/assignments" element={<OfficerAssignments />} />
+                  <Route path="/officer/analytics" element={<OfficerAnalytics />} />
+                  <Route path="/officer/history" element={<OfficerHistory />} />
+                  <Route path="/officer/alerts" element={<OfficerAlerts />} />
 
-                  {/* Tehsildar Routes */}
-                  <Route path="/tehsildar" element={<Navigate to="/tehsildar/dashboard" replace />} />
-                  <Route path="/tehsildar/dashboard" element={<DashboardHome />} />
-                  <Route path="/tehsildar/cases" element={<TehsildarCases />} />
-                  <Route path="/tehsildar/resolution" element={<TehsildarResolution />} />
-                  <Route path="/tehsildar/mutations" element={<TehsildarMutations />} />
-                  <Route path="/tehsildar/history" element={<TehsildarHistory />} />
-                  <Route path="/tehsildar/analytics" element={<TehsildarAnalytics />} />
-                  <Route path="/tehsildar/alerts" element={<TehsildarAlerts />} />
-
-                  {/* Admin Routes */}
-                  <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
-                  <Route path="/admin/overview" element={<AdminOverview />} />
-                  <Route path="/admin/ai-config" element={<AdminAIConfig />} />
-                  <Route path="/admin/users" element={<AdminUsers />} />
-                  <Route path="/admin/logs" element={<AdminLogs />} />
-                  <Route path="/admin/database" element={<AdminDatabase />} />
-                  <Route path="/admin/security" element={<AdminSecurity />} />
-                  <Route path="/admin/integrations" element={<AdminIntegrations />} />
-                  <Route path="/admin/settings" element={<AdminSettings />} />
-                  <Route path="/admin/personnel" element={<AdminPersonnel />} />
+                  {/* Legacy Route Redirects to Officer Dashboard */}
+                  <Route path="/patwari/*" element={<Navigate to="/officer/dashboard" replace />} />
+                  <Route path="/tehsildar/*" element={<Navigate to="/officer/dashboard" replace />} />
+                  <Route path="/admin/*" element={<Navigate to="/officer/dashboard" replace />} />
 
                   {/* Shared Cadastral, Case, and Alert Routes inside Layout */}
                   <Route path="/parcels" element={<ParcelListPage />} />
                   <Route path="/parcels/:parcel_id" element={<ParcelDetailPage />} />
-                  <Route path="/cases" element={<LegacyCasesPage />} />
+                  <Route path="/cases" element={<OfficerCases />} />
                   <Route path="/alerts" element={<LegacyAlertsPage />} />
                 </Route>
 

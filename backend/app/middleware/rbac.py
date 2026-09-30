@@ -14,6 +14,7 @@ require_admin = require_roles(["SYSTEM_ADMIN", "admin"])
 
 
 # Role hierarchy and permissions
+# Two-role hierarchy and permissions: Citizen and Officer
 ROLE_PERMISSIONS = {
     'CITIZEN': {
         'parcels': ['read_own'],
@@ -23,22 +24,35 @@ ROLE_PERMISSIONS = {
         'reports': ['check_public'],
         'verification': [],
     },
-    'FIELD_PATWARI': {
-        'parcels': ['read_all', 'read_own'],
-        'documents': ['read_all', 'upload_own', 'upload_any'],
-        'alerts': ['read_all'],
-        'cases': ['read_assigned', 'update_assigned'],
-        'verification': ['submit_field_report', 'upload_evidence'],
-        'measurements': ['create', 'update'],
+    'OFFICER': {
+        'parcels': ['read_all', 'read_own', 'update_all', '*'],
+        'documents': ['read_all', 'upload_own', 'upload_any', 'verify', '*'],
+        'alerts': ['read_all', 'create', 'update', 'resolve', '*'],
+        'cases': ['read_all', 'read_assigned', 'update_assigned', 'create', 'update', 'assign', 'resolve', '*'],
+        'verification': ['submit_field_report', 'upload_evidence', 'initiate', 'approve', 'reject', '*'],
+        'measurements': ['create', 'update', '*'],
+        'risk': ['read_all', 'trigger_analysis', '*'],
+        'reports': ['export_comprehensive', '*'],
+        'users': ['*'],
+        'system': ['*'],
     },
+    # Backward compatibility aliases mapped to OFFICER:
     'REVENUE_OFFICER': {
-        'parcels': ['read_all', 'update_all'],
-        'documents': ['read_all', 'upload_any', 'verify'],
-        'alerts': ['read_all', 'create', 'update', 'resolve'],
-        'cases': ['read_all', 'create', 'update', 'assign', 'resolve'],
-        'verification': ['initiate', 'approve', 'reject'],
-        'risk': ['read_all', 'trigger_analysis'],
-        'reports': ['export_comprehensive'],
+        'parcels': ['read_all', 'update_all', '*'],
+        'documents': ['read_all', 'upload_any', 'verify', '*'],
+        'alerts': ['read_all', 'create', 'update', 'resolve', '*'],
+        'cases': ['read_all', 'create', 'update', 'assign', 'resolve', '*'],
+        'verification': ['initiate', 'approve', 'reject', '*'],
+        'risk': ['read_all', 'trigger_analysis', '*'],
+        'reports': ['export_comprehensive', '*'],
+    },
+    'FIELD_PATWARI': {
+        'parcels': ['read_all', 'read_own', '*'],
+        'documents': ['read_all', 'upload_own', 'upload_any', '*'],
+        'alerts': ['read_all', '*'],
+        'cases': ['read_assigned', 'update_assigned', '*'],
+        'verification': ['submit_field_report', 'upload_evidence', '*'],
+        'measurements': ['create', 'update', '*'],
     },
     'SYSTEM_ADMIN': {
         'parcels': ['*'],
@@ -74,13 +88,16 @@ def check_permission(user: dict, resource: str, action: str, resource_data: dict
     Returns:
         bool: True if user has permission, False otherwise
     """
-    user_role = user.get('role', 'CITIZEN').upper()
+    raw_role = user.get('role', 'CITIZEN').upper()
+    officer_aliases = {'OFFICER', 'REVENUE_OFFICER', 'FIELD_PATWARI', 'PATWARI', 'TEHSILDAR', 'SYSTEM_ADMIN', 'ADMIN'}
+    user_role = 'OFFICER' if raw_role in officer_aliases else 'CITIZEN'
 
-    # Admin has all permissions
-    if user_role == 'SYSTEM_ADMIN':
-        return True
+    # Admin/Officer has all permissions
+    if user_role == 'OFFICER' or raw_role == 'SYSTEM_ADMIN':
+        role_perms = ROLE_PERMISSIONS.get('OFFICER', {})
+    else:
+        role_perms = ROLE_PERMISSIONS.get(user_role, {})
 
-    role_perms = ROLE_PERMISSIONS.get(user_role, {})
     resource_perms = role_perms.get(resource, [])
 
     # Check for wildcard permission
@@ -109,17 +126,10 @@ def check_permission(user: dict, resource: str, action: str, resource_data: dict
 def require_permission(resource: str, action: str):
     """
     Decorator to enforce permission checks on route handlers
-
-    Usage:
-        @router.get("/parcels")
-        @require_permission('parcels', 'read_all')
-        async def get_parcels(user: dict = Depends(get_current_user)):
-            ...
     """
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            # Extract user from kwargs (should be dependency-injected)
             user = kwargs.get('current_user') or kwargs.get('user')
 
             if not user:
@@ -128,7 +138,6 @@ def require_permission(resource: str, action: str):
                     detail="Authentication required"
                 )
 
-            # Get resource data if available (for ownership checks)
             resource_data = kwargs.get('resource_data')
 
             if not check_permission(user, resource, action, resource_data):
@@ -145,13 +154,8 @@ def require_permission(resource: str, action: str):
 
 def require_role(allowed_roles: List[str]):
     """
-    Decorator to enforce role-based access
-
-    Usage:
-        @router.post("/cases")
-        @require_role(['REVENUE_OFFICER', 'SYSTEM_ADMIN'])
-        async def create_case(user: dict = Depends(get_current_user)):
-            ...
+    Decorator to enforce role-based access for two-role architecture:
+    Citizen and Officer (with legacy role backward compatibility)
     """
     def decorator(func: Callable):
         @wraps(func)
@@ -164,10 +168,15 @@ def require_role(allowed_roles: List[str]):
                     detail="Authentication required"
                 )
 
-            user_role = user.get('role', 'CITIZEN').upper()
-            allowed_roles_upper = [r.upper() for r in allowed_roles]
+            raw_role = user.get('role', 'CITIZEN').upper()
+            officer_aliases = {'OFFICER', 'REVENUE_OFFICER', 'FIELD_PATWARI', 'PATWARI', 'TEHSILDAR', 'SYSTEM_ADMIN', 'ADMIN'}
+            user_role = 'OFFICER' if raw_role in officer_aliases else 'CITIZEN'
 
-            if user_role not in allowed_roles_upper:
+            allowed_roles_upper = set(r.upper() for r in allowed_roles)
+            is_officer_allowed = bool(allowed_roles_upper & officer_aliases)
+            is_citizen_allowed = 'CITIZEN' in allowed_roles_upper
+
+            if not ((user_role == 'OFFICER' and is_officer_allowed) or (user_role == 'CITIZEN' and is_citizen_allowed) or raw_role in allowed_roles_upper):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"Access restricted to roles: {', '.join(allowed_roles)}"

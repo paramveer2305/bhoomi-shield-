@@ -18,11 +18,15 @@ async def register_user(user_in: UserCreate):
     if existing_user:
         raise HTTPException(status_code=400, detail="Username or Email is already registered")
 
+    # Strictly enforce two user roles: citizen and officer
+    requested_role = (user_in.role or "citizen").strip().lower()
+    final_role = "officer" if requested_role == "officer" else "citizen"
+
     user_dict = {
         "username": user_in.username,
         "email": user_in.email,
         "full_name": user_in.full_name,
-        "role": user_in.role if user_in.role in ["citizen", "patwari", "tehsildar", "officer", "admin"] else "citizen",
+        "role": final_role,
         "hashed_password": get_password_hash(user_in.password),
         "created_at": datetime.utcnow()
     }
@@ -37,13 +41,14 @@ async def login_user(login_data: UserLogin):
     username = login_data.username.strip()
     user = await db.users.find_one({"username": username})
 
-    # Standard demo accounts configuration
+    # Standard two-role demo accounts configuration (with legacy aliases mapped to officer)
     demo_defaults = {
-        "admin": {"role": "admin", "full_name": "System Administrator", "email": "admin@bhoomishield.gov.in"},
         "officer": {"role": "officer", "full_name": "Revenue Officer Sharma", "email": "officer@bhoomishield.gov.in"},
-        "patwari": {"role": "patwari", "full_name": "Patwari Suresh Patel", "email": "patwari@bhoomishield.gov.in"},
-        "tehsildar": {"role": "tehsildar", "full_name": "Tehsildar Amit Verma", "email": "tehsildar@bhoomishield.gov.in"},
         "citizen": {"role": "citizen", "full_name": "Ramesh Kumar Sharma", "email": "citizen@bhoomishield.gov.in"},
+        # Legacy demo accounts mapped to single officer role:
+        "patwari": {"role": "officer", "full_name": "Field Officer Patel", "email": "officer.patel@bhoomishield.gov.in"},
+        "tehsildar": {"role": "officer", "full_name": "Executive Officer Verma", "email": "officer.verma@bhoomishield.gov.in"},
+        "admin": {"role": "officer", "full_name": "System Administrator", "email": "admin@bhoomishield.gov.in"},
     }
 
     # Auto-seed standard demo accounts on-the-fly if not already created
@@ -78,13 +83,20 @@ async def login_user(login_data: UserLogin):
             detail="Incorrect username or password"
         )
 
+    # Normalize role to two-role system: citizen or officer
+    raw_role = (user.get("role") or "citizen").lower()
+    if raw_role in ["officer", "patwari", "tehsildar", "revenue_officer", "field_patwari", "admin"]:
+        user_role = "officer"
+    else:
+        user_role = "citizen"
+
     access_token = create_access_token(
-        data={"sub": user["username"], "role": user["role"]}
+        data={"sub": user["username"], "role": user_role}
     )
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "role": user["role"],
+        "role": user_role,
         "username": user["username"]
     }
 
@@ -95,4 +107,8 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
     if not user:
         raise HTTPException(status_code=404, detail="User profile not found")
     user["id"] = str(user["_id"])
+    
+    # Normalize role to two-role architecture
+    raw_role = (user.get("role") or "citizen").lower()
+    user["role"] = "officer" if raw_role in ["officer", "patwari", "tehsildar", "revenue_officer", "field_patwari", "admin"] else "citizen"
     return user

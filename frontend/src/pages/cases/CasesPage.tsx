@@ -186,7 +186,7 @@ const CasesPage: React.FC<CasesPageProps> = ({ title, subtitle }) => {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/tehsildar/resolution')}
+            onClick={() => navigate('/officer/resolution')}
             className="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-all cursor-pointer"
           >
             <Scale className="w-4 h-4" />
@@ -425,7 +425,7 @@ const CasesPage: React.FC<CasesPageProps> = ({ title, subtitle }) => {
                             {(caseItem.status === 'OPEN' || caseItem.status === 'IN_PROGRESS') && (
                               <button
                                 type="button"
-                                onClick={() => navigate('/tehsildar/resolution')}
+                                onClick={() => navigate('/officer/resolution')}
                                 className="px-2.5 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded text-xs font-medium border border-amber-200 transition-colors cursor-pointer flex items-center gap-1"
                                 title="Open Resolution Workbench"
                               >

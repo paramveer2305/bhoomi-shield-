@@ -3,9 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types';
 import CitizenLayout from '../layouts/CitizenLayout';
-import PatwariLayout from '../layouts/PatwariLayout';
-import TehsildarLayout from '../layouts/TehsildarLayout';
-import AdminLayout from '../layouts/AdminLayout';
+import OfficerLayout from '../layouts/OfficerLayout';
 
 export type { UserRole };
 
@@ -16,6 +14,7 @@ interface RoleRouteConfig {
   redirectPath?: string;
 }
 
+// Two-role architecture: Citizen and Officer
 const ROLE_ROUTES: RoleRouteConfig[] = [
   {
     layout: CitizenLayout,
@@ -24,40 +23,37 @@ const ROLE_ROUTES: RoleRouteConfig[] = [
     redirectPath: '/citizen/portfolio',
   },
   {
-    layout: PatwariLayout,
-    basePath: '/patwari',
-    allowedRoles: ['patwari', 'officer'],
-    redirectPath: '/patwari/dashboard',
-  },
-  {
-    layout: TehsildarLayout,
-    basePath: '/tehsildar',
-    allowedRoles: ['tehsildar', 'officer'],
-    redirectPath: '/tehsildar/dashboard',
-  },
-  {
-    layout: AdminLayout,
-    basePath: '/admin',
-    allowedRoles: ['admin'],
-    redirectPath: '/admin/overview',
+    layout: OfficerLayout,
+    basePath: '/officer',
+    allowedRoles: ['officer'],
+    redirectPath: '/officer/dashboard',
   },
 ];
 
-export const getRoleRouteConfig = (role: UserRole, pathname?: string): RoleRouteConfig | undefined => {
+export const normalizeRole = (role?: string): UserRole => {
+  const r = (role || 'citizen').toLowerCase();
+  return ['officer', 'patwari', 'tehsildar', 'revenue_officer', 'field_patwari', 'admin'].includes(r)
+    ? 'officer'
+    : 'citizen';
+};
+
+export const getRoleRouteConfig = (role: UserRole | string, pathname?: string): RoleRouteConfig | undefined => {
+  const normRole = normalizeRole(role);
   if (pathname) {
-    const matched = ROLE_ROUTES.find(config => config.allowedRoles.includes(role) && pathname.startsWith(config.basePath));
+    const matched = ROLE_ROUTES.find(config => config.allowedRoles.includes(normRole) && pathname.startsWith(config.basePath));
     if (matched) return matched;
   }
-  return ROLE_ROUTES.find(config => config.allowedRoles.includes(role));
+  return ROLE_ROUTES.find(config => config.allowedRoles.includes(normRole));
 };
 
-export const getDashboardPathForRole = (role: UserRole): string => {
-  const config = getRoleRouteConfig(role);
-  return config?.redirectPath || '/';
+export const getDashboardPathForRole = (role: UserRole | string): string => {
+  const normRole = normalizeRole(role);
+  return normRole === 'officer' ? '/officer/dashboard' : '/citizen/portfolio';
 };
 
-export const isPathAllowedForRole = (pathname: string, role: UserRole): boolean => {
-  const allowedConfigs = ROLE_ROUTES.filter(config => config.allowedRoles.includes(role));
+export const isPathAllowedForRole = (pathname: string, role: UserRole | string): boolean => {
+  const normRole = normalizeRole(role);
+  const allowedConfigs = ROLE_ROUTES.filter(config => config.allowedRoles.includes(normRole));
   if (allowedConfigs.length === 0) return false;
 
   // Allow access to any allowed basePath for this role
@@ -66,8 +62,13 @@ export const isPathAllowedForRole = (pathname: string, role: UserRole): boolean 
   // Allow parcel routes for all authenticated roles inside their respective layout
   if (pathname.startsWith('/parcels')) return true;
 
-  // Allow cases for officers, patwari, tehsildar, admin
-  if (pathname.startsWith('/cases') && ['patwari', 'tehsildar', 'officer', 'admin'].includes(role)) {
+  // Allow cases for officers
+  if (pathname.startsWith('/cases') && normRole === 'officer') {
+    return true;
+  }
+
+  // Allow legacy redirect paths for officers to avoid broken links
+  if ((pathname.startsWith('/patwari') || pathname.startsWith('/tehsildar') || pathname.startsWith('/admin')) && normRole === 'officer') {
     return true;
   }
 
@@ -108,7 +109,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({ children, allowedRoles }) 
   }
 
   // If specific roles are required, check them
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && user && !allowedRoles.includes(normalizeRole(user.role))) {
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -201,22 +202,23 @@ export const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children 
 // Hook for checking permissions in components
 export const useRolePermissions = () => {
   const { user } = useAuth();
+  const currentRole = normalizeRole(user?.role);
 
   const canAccess = (roles: UserRole[]): boolean => {
     if (!user) return false;
-    return roles.includes(user.role);
+    return roles.includes(currentRole);
   };
 
   const isRole = (role: UserRole): boolean => {
-    return user?.role === role;
+    return currentRole === role;
   };
 
   const getDashboardPath = (): string => {
     if (!user) return '/login';
-    return getDashboardPathForRole(user.role);
+    return getDashboardPathForRole(currentRole);
   };
 
-  return { canAccess, isRole, getDashboardPath, userRole: user?.role };
+  return { canAccess, isRole, getDashboardPath, userRole: currentRole };
 };
 
 export default RoleGuard;
